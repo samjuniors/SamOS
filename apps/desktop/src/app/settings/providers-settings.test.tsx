@@ -115,6 +115,24 @@ async function renderProvidersSettings() {
 }
 
 describe('ProvidersSettings', () => {
+  it('reports provider status discovery failures and recovers with retry', async () => {
+    listOAuthProviders.mockReset()
+    listOAuthProviders
+      .mockRejectedValueOnce(new Error('Gateway temporarily unavailable'))
+      .mockResolvedValue({ providers: [provider('nous', true)] })
+
+    await renderProvidersSettings()
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(screen.getByText(/Could not load provider account status/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+    await waitFor(() => expect(listOAuthProviders).toHaveBeenCalledTimes(2))
+  })
+
+
   it('reads and saves API keys for the shared Settings target and reloads when it changes', async () => {
     $activeGatewayProfile.set('profile-a')
     $settingsScopeOverride.set('profile-b')
