@@ -79,6 +79,7 @@ export function initCuaIpc(): () => void {
         onCapture?: (cb: (payload: CuaCapturePayload) => void) => () => void
         onActionStart?: (cb: (payload: CuaActionStartPayload) => void) => () => void
         onActionEnd?: (cb: (payload: CuaActionEndPayload) => void) => () => void
+        onAborted?: (cb: () => void) => () => void
       }
     }
   }).hermesDesktop?.cua
@@ -99,6 +100,15 @@ export function initCuaIpc(): () => void {
 
   if (cuaApi.onActionEnd) {
     unsubs.push(cuaApi.onActionEnd(end => recordCuaActionEnd(end)))
+  }
+
+  if (cuaApi.onAborted) {
+    unsubs.push(cuaApi.onAborted(() => {
+      // ESC / native abort must update the renderer immediately, including
+      // any delayed Sofia typing decisions waiting on $cuaActive.
+      $cuaActive.set(false)
+      $cuaLastAction.set(null)
+    }))
   }
 
   return () => {
