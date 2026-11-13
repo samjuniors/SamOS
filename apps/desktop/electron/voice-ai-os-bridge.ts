@@ -57,7 +57,9 @@ export function readEnvConfig(): Record<string, string> {
         const parsed = parseEnvFile(fs.readFileSync(candidate, 'utf-8'))
         Object.assign(config, parsed)
       }
-    } catch {}
+    } catch {
+      // Unreadable optional env files must not block startup.
+    }
   }
 
   return config
@@ -212,7 +214,7 @@ function updateStartupStatus(appApi: typeof app, enable: boolean): StartupStatus
 export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridgeController {
   const log = deps.log ?? ((msg: string) => console.log(msg))
   let currentVoiceState: VoiceState = 'IDLE'
-  let activeTypingProcess: ReturnType<typeof import('node:child_process').execFile> | null = null
+  let activeTypingProcess: { kill: () => boolean } | null = null
   let currentWindowMode: ShellWindowMode = 'canvas'
   let isMicrophoneMuted = false
   let tray: Tray | null = null
@@ -436,7 +438,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     currentWindowMode = mode
 
     switch (mode) {
-      case 'hud':
+      case 'hud': {
         deps.openHudWindow(null, null)
         const mainWin = deps.getMainWindow()
 
@@ -445,6 +447,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         }
 
         break
+      }
 
       case 'canvas':
         deps.closeHudWindow()
@@ -457,7 +460,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
 
         break
 
-      case 'minimized':
+      case 'minimized': {
         deps.closeHudWindow()
         const win = deps.getMainWindow()
 
@@ -466,6 +469,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         }
 
         break
+      }
     }
 
     broadcastToAllWindows('hermes:system:windowModeChanged', mode)
