@@ -212,6 +212,7 @@ function updateStartupStatus(appApi: typeof app, enable: boolean): StartupStatus
 export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridgeController {
   const log = deps.log ?? ((msg: string) => console.log(msg))
   let currentVoiceState: VoiceState = 'IDLE'
+  let activeTypingProcess: ReturnType<typeof import('node:child_process').execFile> | null = null
   let currentWindowMode: ShellWindowMode = 'canvas'
   let isMicrophoneMuted = false
   let tray: Tray | null = null
@@ -230,6 +231,11 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
   // 2. Emergency Interrupt (Barge-in / Stop)
   const handleInterrupt = async () => {
     log('[voice-bridge] Emergency interrupt triggered (barge-in / ESC)')
+    // Cancel live SendKeys work as well as voice playback. ESC is not merely
+    // a visual reset: pending text entry must not continue in another window.
+    activeTypingProcess?.kill()
+    activeTypingProcess = null
+    broadcastToAllWindows('hermes:cua:aborted', { timestamp: Date.now() })
     broadcastToAllWindows('hermes:voice:interrupt', { timestamp: Date.now() })
 
     // Cancel active playback or automation, return to IDLE or LISTENING
@@ -547,25 +553,49 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
   })
 
   deps.ipcMain.handle('hermes:cua:typeText', async (_event, text: string) => {
-    log(`[voice-bridge] CUA typeText: ${text}`)
+    if (typeof text !== 'string' || !text.length || text.length > 4000) {
+      return { success: false, error: 'Text entry must be between 1 and 4000 characters.' }
+    }
 
     try {
-      const { exec } = await import('child_process')
-      // Escape for PowerShell WScript.Shell SendKeys
-      const safeText = text.replace(/([+^%~{}()\[\]\\])/g, '{$1}')
-      const psScript = `$wshell = New-Object -ComObject wscript.shell; Start-Sleep -Milliseconds 300; $wshell.SendKeys('${safeText}')`
-      exec(`powershell -NoProfile -Command "${psScript}"`)
+      const { execFile } = await import('node:child_process')
+      // Keep the user's text out of shell command strings entirely. Encode
+      // UTF-16LE data, then escape only the SendKeys meta-characters in PS.
+      const textBase64 = Buffer.from(text, 'utf16le').toString('base64')
+      const psScript = [
+        '$wshell = New-Object -ComObject WScript.Shell',
+        `$text = [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${textBase64}'))`,
+        "$safe = $text -replace '([+^%~{}()\\[\\]])', '{$1}'",
+        '$wshell.SendKeys($safe)'
+      ].join('; ')
+      const encoded = Buffer.from(psScript, 'utf16le').toString('base64')
+
+      await new Promise<void>((resolve, reject) => {
+        const child = execFile('powershell.exe', [
+          '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded
+        ], { windowsHide: true, timeout: 15000 }, error => {
+          if (activeTypingProcess === child) {
+            activeTypingProcess = null
+          }
+          if (error) {
+            reject(error)
+          } else {
+            resolve()
+          }
+        })
+        activeTypingProcess = child
+      })
 
       applyVoiceState('CUA_ACTIVE')
       broadcastToAllWindows('hermes:cua:actionStart', {
         sessionId: 'cua_live',
         action: 'type',
         timestamp: Date.now(),
-        text: `Typed "${text}"`
+        text: 'Completed requested Windows text entry'
       })
-
       return { success: true }
     } catch (err: any) {
+      log(`[voice-bridge] CUA typeText failed: ${err}`)
       return { success: false, error: err.message }
     }
   })
@@ -613,6 +643,8 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
 
   deps.ipcMain.handle('hermes:cua:abort', async () => {
     log('[voice-bridge] CUA abort requested')
+    activeTypingProcess?.kill()
+    activeTypingProcess = null
     broadcastToAllWindows('hermes:cua:aborted', { timestamp: Date.now() })
     applyVoiceState('IDLE')
   })
