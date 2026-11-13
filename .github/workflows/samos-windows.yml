@@ -39,6 +39,6 @@ jobs:
       - name: Desktop TypeScript checks
         run: pnpm --dir apps/desktop run typecheck
       - name: SamOS UI regression tests
-        run: pnpm --dir apps/desktop exec vitest run --project ui src/app/voice-ai-os/credential-storage.test.ts src/app/voice-ai-os/company-state.test.ts src/app/voice-ai-os/dynamic-model-routing.test.ts
+        run: pnpm --dir apps/desktop exec vitest run --project ui src/app/voice-ai-os/credential-storage.test.ts src/app/voice-ai-os/company-state.test.ts src/app/voice-ai-os/dynamic-model-routing.test.ts src/app/voice-ai-os/self-repair-startup.test.ts
       - name: Renderer and Electron build
         run: pnpm --dir apps/desktop run build

@@ -100,7 +100,7 @@ export function SelfRepairModal() {
           <div className="flex items-center gap-4">
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-extrabold font-mono text-[#ff6a00]">
-                {health.healthScore}%
+                {health.lastScanTime === null ? '--' : `${health.healthScore}%`}
               </span>
               <span className="text-xs font-semibold uppercase tracking-wider text-[#9aa5b8]">
                 Health
@@ -161,10 +161,12 @@ export function SelfRepairModal() {
                   </div>
 
                   <div className="shrink-0 ml-3">
-                    {check.status === 'healthy' || check.status === 'repaired' ? (
+                    {check.status === 'not_checked' ? (
+                      <div className="text-xs font-mono text-slate-400">Not checked</div>
+                    ) : check.status === 'healthy' || check.status === 'repaired' ? (
                       <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
                         <CheckCircle2 className="size-3" />
-                        <span>Nominal</span>
+                        <span>Basic check passed</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5 text-xs font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">

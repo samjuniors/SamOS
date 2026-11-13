@@ -10,7 +10,7 @@ import {
   startHandsfreeAudio
 } from './voice-state'
 
-export type SubsystemHealthStatus = 'healthy' | 'degraded' | 'repaired' | 'failed'
+export type SubsystemHealthStatus = 'not_checked' | 'healthy' | 'degraded' | 'repaired' | 'failed'
 
 export interface SubsystemCheck {
   id: string
@@ -31,7 +31,7 @@ export interface SelfRepairLogEntry {
 
 export interface SystemHealthState {
   healthScore: number // 0-100%
-  overallStatus: 'NOMINAL' | 'SELF_HEALING' | 'ATTENTION_REQUIRED'
+  overallStatus: 'NOT_CHECKED' | 'NOMINAL' | 'SELF_HEALING' | 'ATTENTION_REQUIRED'
   isScanning: boolean
   lastScanTime: number | null
   checks: SubsystemCheck[]
@@ -43,56 +43,56 @@ const INITIAL_CHECKS: SubsystemCheck[] = [
     id: 'audio_pipeline',
     name: 'Voice Engine & Microphone VAD',
     category: 'audio',
-    status: 'healthy',
-    message: 'Continuous 16kHz PCM duplex stream standby with dynamic noise floor tracking',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   },
   {
     id: 'ai_brain_quota',
     name: 'AI Brain Connectivity & Quota Gate',
     category: 'ai_brain',
-    status: 'healthy',
-    message: 'Google Gemini 3.1 Live/Flash pipeline active with fallback redundancy',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   },
   {
     id: 'ipc_desktop_bridge',
     name: 'IPC Desktop CUA Driver',
     category: 'ipc_bridge',
-    status: 'healthy',
-    message: 'Native Windows automation channels (spawn, typeText, popup) bound',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   },
   {
     id: 'memory_watchdog',
     name: 'Memory & Turn Lock Watchdog',
     category: 'memory',
-    status: 'healthy',
-    message: 'Zero hung speech buffers; turn state machine operating nominal',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   },
   {
     id: 'workspace_sandboxes',
     name: 'Workspace Sandboxes & Storage Integrity',
     category: 'workspace',
-    status: 'healthy',
-    message: 'Sandbox directories and profile settings synchronized with .env',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   }
 ]
 
 export const $systemHealth = atom<SystemHealthState>({
-  healthScore: 100,
-  overallStatus: 'NOMINAL',
+  healthScore: 0,
+  overallStatus: 'NOT_CHECKED',
   isScanning: false,
-  lastScanTime: Date.now(),
+  lastScanTime: null,
   checks: INITIAL_CHECKS,
   logs: [
     {
       id: `log_${Date.now()}`,
       timestamp: Date.now(),
       level: 'info',
-      message: 'Agentic Self-Repair Engine initialized in standby sentinel mode.'
+      message: 'Not checked yet; run diagnostics to obtain a basic status.'
     }
   ]
 })

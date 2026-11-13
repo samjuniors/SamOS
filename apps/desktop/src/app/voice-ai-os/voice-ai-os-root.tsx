@@ -151,7 +151,7 @@ export function VoiceAiOsRoot({
             title="Autonomous Self-Repair Sentinel - Click to inspect or run full system diagnostics"
           >
             <Wrench className="size-3 text-[#ff6a00] animate-pulse" />
-            <span>Self-Repair: {systemHealth.healthScore}%</span>
+            <span>{systemHealth.lastScanTime === null ? 'Health: Not checked' : `Basic checks: ${systemHealth.healthScore}%`}</span>
           </button>
 
           <div className="h-4 w-[1px] bg-[#262c37]" />

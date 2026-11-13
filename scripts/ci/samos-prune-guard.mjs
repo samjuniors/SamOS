@@ -27,6 +27,13 @@ if (/cloudApiKey:\s*'[^']{10,}'/.test(provider)) {
   throw new Error('Cloud API key must not be hard-coded in SamOS renderer defaults')
 }
 const company = readFileSync(at('apps/desktop/src/store/company-state.ts'), 'utf8')
+if (!company.includes('const DEFAULT_TASKS: CompanyTask[] = []')) {
+  throw new Error('Fresh SamOS must not seed fake completed company tasks')
+}
+const health = readFileSync(at('apps/desktop/src/store/self-repair-engine.ts'), 'utf8')
+if (!health.includes("overallStatus: 'NOT_CHECKED'")) {
+  throw new Error('SamOS self-repair status must begin unverified')
+}
 const heartbeat = company.split('export async function runCompanyHeartbeat()')[1]?.split('export function addHeartbeatLog')[0] || ''
 if (/task\.status\s*=|task\.spentUsd\s*=/.test(heartbeat)) {
   throw new Error('Local heartbeat must not claim real agent completion or spending')

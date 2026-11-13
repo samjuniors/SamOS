@@ -58,3 +58,7 @@ English security policy, development guides, source, tests, copyright license, a
 Retired the original Hermes Docker build/publish, Nix flake, Termux, automatic canary, stable-release, stable-release-publication and catalog-maintenance workflows. These workflows are not the SamOS Windows Electron release contract. The old stable and canary release scripts remain as historical source references for later porting, but must not be used to publish a SamOS build. The draft still requires native Windows acceptance and package measurement.
 
 Note: This is **source/CI hygiene**, not proof of a smaller Windows binary. The inherited general-purpose CI is still present and may have Linux/backend test lanes; consider streamlining it only after the targeted Windows test gate passes.
+
+## Runtime-truth hardening
+
+Fresh SamOS profiles now have zero reported spending and no pre-completed tasks. The five predefined organizational roles are local templates, not an executed Paperclip organization; they start idle with zero completed jobs and zero charged spend. Previously saved local profiles are not forcibly overwritten because doing so could destroy user-modified data. Self-repair status starts as **NOT_CHECKED** rather than an unjustified 100% healthy result; checks must run before even basic status can be displayed. Native Windows verification is still pending.
