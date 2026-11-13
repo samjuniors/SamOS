@@ -29,3 +29,9 @@ On Windows: install pinned toolchain, run desktop typecheck, unit tests, Electro
 - Added a synthetic Git snapshot regression test to ensure the agent runtime remains present and contributor archive, test and website trees stay out of the shipped snapshot.
 - Deliberately retained `plugin-catalog/`, `optional-skills/`, `plugins/`, `skills/`, and all runtime state modules until their runtime discovery/feature wiring is audited; stripping them without tests risks disabling Sofia tools.
 - No Windows executable was built during this Chat-only pass; actual package size and feature smoke tests remain pending.
+
+## Pass 3 — Docusaurus removal (draft only)
+- Removed the upstream website from the active source tree, not from git history. Technical reference links are pinned in `docs/reference/HERMES_UPSTREAM_MAP.md`.
+- Removed five site-only workflows, site-only tests and retired docs-only just targets.
+- Removed the site-specific job from the umbrella CI gate and added a separate Windows Electron build-and-size workflow. Windows runtime acceptance is still pending.
+- Retained web/TUI runtime, backend, skills/tools, and shared cross-platform build helpers pending dependency verification.

@@ -1,0 +1,93 @@
+name: SamOS Windows Electron Baseline
+
+on:
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/shared/**'
+      - 'agent/**'
+      - 'gateway/**'
+      - 'scripts/build/**'
+      - 'scripts/bundles/**'
+      - 'docs/SAMOS_*.md'
+      - '.github/workflows/samos-windows-ci.yml'
+      - 'package.json'
+      - 'pnpm-*.yaml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: samos-windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-electron:
+    name: Windows Electron build and unpacked package
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out SamOS
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pinned repo toolchain
+        uses: ./.github/actions/setup-pm
+        with:
+          toolchain: all
+          extras: '[]'
+          test-environment: 'true'
+
+      - name: Install locked JavaScript dependencies
+        shell: pwsh
+        run: just js-install
+
+      - name: Prepare locked Electron
+        shell: pwsh
+        run: just electron-runtime
+
+      - name: Typecheck desktop and Electron
+        shell: pwsh
+        run: pnpm --dir apps/desktop run typecheck
+
+      - name: Run UI tests
+        shell: pwsh
+        run: pnpm --dir apps/desktop run test:ui
+
+      - name: Run Electron unit tests
+        shell: pwsh
+        run: pnpm --dir apps/desktop run test:desktop:platforms
+
+      - name: Build desktop
+        shell: pwsh
+        run: just desktop-build
+
+      - name: Package unsigned, unpacked Windows x64 build
+        working-directory: apps/desktop
+        shell: pwsh
+        run: pnpm run builder --dir --publish never --win --x64
+
+      - name: Record unpacked size and artifact location
+        shell: pwsh
+        run: |
+          $paths = @(Get-ChildItem -Path apps/desktop/release -Directory -Filter "*unpacked")
+          if ($paths.Count -eq 0) { throw "No unpacked Windows build found" }
+          $rows = foreach ($path in $paths) {
+            $size = (Get-ChildItem -LiteralPath $path.FullName -Recurse -File | Measure-Object Length -Sum).Sum
+            [pscustomobject]@{ directory = $path.Name; bytes = [int64]$size; mib = [math]::Round($size / 1MB, 1) }
+          }
+          $rows | ConvertTo-Json -Depth 4 | Set-Content -Path samos-windows-size.json
+          $rows | Format-Table | Out-String | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload size report only
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: samos-windows-size-${{ github.run_attempt }}
+          path: samos-windows-size.json
+          if-no-files-found: ignore
+          retention-days: 14
