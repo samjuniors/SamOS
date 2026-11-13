@@ -244,7 +244,9 @@ export async function refreshEnvConfig(): Promise<Record<string, string>> {
         }
       }
     }
-  } catch {}
+  } catch {
+    // Environment IPC may be unavailable outside the packaged desktop.
+  }
 
   $envConfigMap.set(envData)
   const effective = computeEffectiveConfig(envData, $uiOverrides.get())
@@ -283,7 +285,9 @@ export function setAiProviderConfig(update: Partial<AIProviderConfig>): void {
 export function resetAiProviderToEnv(): void {
   try {
     localStorage.removeItem(UI_OVERRIDES_KEY)
-  } catch {}
+  } catch {
+    // Browser storage is optional and may be disabled.
+  }
 
   $uiOverrides.set({})
   const effective = computeEffectiveConfig($envConfigMap.get(), {})
