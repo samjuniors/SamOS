@@ -1,0 +1,105 @@
+name: SamOS PR7 temporary source autofix
+
+# Restricted to the one draft cleanup branch; delete after lint fixes land.
+on:
+  push:
+    branches: [chore/samos-cleanup-consolidated]
+    paths:
+      - 'apps/desktop/src/**'
+      - 'apps/desktop/electron/**'
+      - '.github/workflows/samos-lint-autofix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: samos-pr7-autofix-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    if: github.repository == 'samjuniors/SamOS' && github.ref_name == 'chore/samos-cleanup-consolidated'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      has-fixes: ${{ steps.patch.outputs.has-fixes }}
+    steps:
+      - name: Checkout unprivileged source
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up pinned toolchain
+        uses: ./.github/actions/setup-pm
+        with:
+          toolchain: node
+      - name: Install locked JS dependencies without scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Apply only ESLint autofixable source edits
+        # Existing non-fixable errors must remain visible in the normal lint gate.
+        run: pnpm --dir apps/desktop run lint:fix || true
+      - name: Produce strictly scoped patch
+        id: patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --binary -- apps/desktop/src apps/desktop/electron > samos-lint-fix.patch
+          changed="$(git diff --name-only)"
+          if [ -n "$changed" ] && echo "$changed" | grep -Ev '^apps/desktop/(src|electron)/.*\.(ts|tsx|js|jsx|cjs|mjs)$'; then
+            echo "::error::Autofix modified a disallowed source path"
+            exit 1
+          fi
+          if [ -s samos-lint-fix.patch ]; then
+            echo "has-fixes=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- apps/desktop/src apps/desktop/electron
+          else
+            echo "has-fixes=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload patch
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: samos-pr7-lint-fix
+          path: samos-lint-fix.patch
+          retention-days: 2
+
+  apply:
+    needs: generate
+    if: needs.generate.outputs.has-fixes == 'true' && github.repository == 'samjuniors/SamOS' && github.ref_name == 'chore/samos-cleanup-consolidated'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      # This job does NOT run package scripts, Node, ESLint or arbitrary code.
+      - name: Checkout exact generated-patch revision
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: true
+      - name: Download lint patch
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: samos-pr7-lint-fix
+          path: ${{ runner.temp }}/samos-lint-autofix
+      - name: Validate patch paths and commit on PR7 branch only
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.sha }}
+          TARGET_BRANCH: chore/samos-cleanup-consolidated
+          PATCH_FILE: ${{ runner.temp }}/samos-lint-autofix/samos-lint-fix.patch
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$BASE_SHA"
+          test -s "$PATCH_FILE"
+          git apply --check "$PATCH_FILE"
+          git apply --index "$PATCH_FILE"
+          staged="$(git diff --cached --name-only)"
+          test -n "$staged"
+          if echo "$staged" | grep -Ev '^apps/desktop/(src|electron)/.*\.(ts|tsx|js|jsx|cjs|mjs)$'; then
+            echo "::error::Refusing patch outside SamOS desktop source"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "style(samos): apply ESLint autofix on draft cleanup branch"
+          git push origin HEAD:refs/heads/"$TARGET_BRANCH"
