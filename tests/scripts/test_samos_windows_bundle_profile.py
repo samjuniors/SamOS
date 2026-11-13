@@ -48,3 +48,18 @@ def test_explicit_samos_unpacked_package_includes_native_agent_without_tui_web()
     assert "--publish never" in package
     # Existing Hermes full-profile packaging remains intact for compatibility.
     assert "--frontend-profile electron-only" not in scripts["payload"]
+
+
+def test_windows_ci_has_independent_lint_and_agent_inclusive_package():
+    """Lint debt must not hide the Windows backend-inclusive package results."""
+    root = Path(__file__).resolve().parents[2]
+    workflow = (root / ".github/workflows/samos-windows.yml").read_text(encoding="utf-8")
+    assert "  windows-lint:" in workflow
+    assert "  windows-electron:" in workflow
+    lint_job, package_job = workflow.split("  windows-electron:", 1)
+    assert "pnpm --dir apps/desktop run lint" in lint_job
+    assert "pnpm --dir apps/desktop run lint" not in package_job
+    assert "pnpm run pack:samos:unpacked" in package_job
+    assert "run: pnpm run builder --dir --publish never --win --x64" not in package_job
+    assert "--publish never" in (root / "apps/desktop/package.json").read_text(encoding="utf-8")
+    assert "continue-on-error: true" not in lint_job
