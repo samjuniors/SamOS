@@ -66,3 +66,7 @@ Fresh SamOS profiles now have zero reported spending and no pre-completed tasks.
 ## Agent-control truthfulness
 
 The live AI Employees grid no longer silently creates demo workers on mount. Sample workers can still be deliberately created in development mode for previews. Subagent pause/resume/stop/steer now return a failure when the native bridge is absent or rejects the request; the UI store changes only after a successful backend acknowledgment. The bridge's actual cancellation guarantee remains to be verified with Windows real-host acceptance.
+
+## Renderer startup optimization
+
+The default voice-first SamOS entrypoint no longer eagerly imports the whole classic Hermes chat application. The old chat remains available through the `win=classic` compatibility route via an asynchronous import. This aims to reduce default startup JS/initialization work; **it does not yet prove a reduction in the size of the complete packaged app**. Compare Windows Vite output and performance telemetry before making startup size claims.

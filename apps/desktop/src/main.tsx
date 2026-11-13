@@ -29,7 +29,6 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router'
 
-import App from './app'
 import { RootErrorBoundary } from './components/error-boundary'
 import { HapticsProvider } from './components/haptics-provider'
 import { RootTooltipProvider } from './components/ui/tooltip'
@@ -91,25 +90,28 @@ if (winParam === 'overlay') {
   // Opt-in legacy chat shell
   installRendererAnimationPauseState()
 
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <RootErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <I18nProvider>
-            <ThemeProvider>
-              <HapticsProvider>
-                <RootTooltipProvider>
-                  <HashRouter useTransitions={false}>
-                    <App />
-                  </HashRouter>
-                </RootTooltipProvider>
-              </HapticsProvider>
-            </ThemeProvider>
-          </I18nProvider>
-        </QueryClientProvider>
-      </RootErrorBoundary>
-    </StrictMode>
-  )
+  // Classic Hermes chat is a compatibility route, not part of SamOS startup.
+  void import('./app').then(({ default: App }) => {
+    createRoot(document.getElementById('root')!).render(
+      <StrictMode>
+        <RootErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <I18nProvider>
+              <ThemeProvider>
+                <HapticsProvider>
+                  <RootTooltipProvider>
+                    <HashRouter useTransitions={false}>
+                      <App />
+                    </HashRouter>
+                  </RootTooltipProvider>
+                </HapticsProvider>
+              </ThemeProvider>
+            </I18nProvider>
+          </QueryClientProvider>
+        </RootErrorBoundary>
+      </StrictMode>
+    )
+  })
 } else {
   // Default entrypoint: Hermes Voice AI OS Shell
   installRendererAnimationPauseState()

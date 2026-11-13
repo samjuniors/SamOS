@@ -22,6 +22,10 @@ for (const path of [
 for (const path of ['website', 'evals', '.github/workflows/deploy-site.yml']) {
   if (existsSync(at(path))) throw new Error(`Retired source unexpectedly restored: ${path}`)
 }
+const rendererEntry = readFileSync(at('apps/desktop/src/main.tsx'), 'utf8')
+if (/^import App from ['"]\.\/app['"]/m.test(rendererEntry)) {
+  throw new Error('Classic Hermes UI must not be eagerly loaded into SamOS startup')
+}
 const provider = readFileSync(at('apps/desktop/src/store/ai-provider-config.ts'), 'utf8')
 if (/cloudApiKey:\s*'[^']{10,}'/.test(provider)) {
   throw new Error('Cloud API key must not be hard-coded in SamOS renderer defaults')
