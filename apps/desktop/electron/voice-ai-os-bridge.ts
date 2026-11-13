@@ -15,6 +15,8 @@ import path from 'path'
 import type { app, BrowserWindow, globalShortcut, ipcMain} from 'electron';
 import { Menu, nativeImage, type NativeImage, Tray } from 'electron'
 
+import { resolveCuaLaunchTarget } from './cua-launch-policy'
+
 export function parseEnvFile(content: string): Record<string, string> {
   const result: Record<string, string> = {}
 
@@ -509,27 +511,23 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     log(`[voice-bridge] CUA launchApp: ${appName}`)
 
     try {
-      const { spawn } = await import('child_process')
-
-      const validApps: Record<string, string> = {
-        notepad: 'notepad.exe',
-        'notepad.exe': 'notepad.exe',
-        calc: 'calc.exe',
-        calculator: 'calc.exe',
-        'calc.exe': 'calc.exe',
-        explorer: 'explorer.exe',
-        'explorer.exe': 'explorer.exe',
-        cmd: 'cmd.exe',
-        'cmd.exe': 'cmd.exe',
-        powershell: 'powershell.exe',
-        paint: 'mspaint.exe',
-        mspaint: 'mspaint.exe',
-        edge: 'msedge.exe',
-        chrome: 'chrome.exe'
+      const targetBinary = resolveCuaLaunchTarget(appName, args)
+      if (!targetBinary) {
+        return { success: false, error: 'This app or its arguments are not approved for voice computer-use.' }
       }
 
-      const targetBinary = validApps[appName.toLowerCase().trim()] || appName.trim()
-      const child = spawn(targetBinary, args, { detached: true, stdio: 'ignore', shell: true })
+      const { spawn } = await import('node:child_process')
+      const child = spawn(targetBinary, [], {
+        detached: true,
+        stdio: 'ignore',
+        shell: false
+      })
+      // Node emits spawn errors asynchronously. Do not claim success until
+      // the OS has accepted the exact allowlisted executable.
+      await new Promise<void>((resolve, reject) => {
+        child.once('spawn', () => resolve())
+        child.once('error', reject)
+      })
       child.unref()
 
       applyVoiceState('CUA_ACTIVE')
