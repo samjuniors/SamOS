@@ -70,9 +70,9 @@ const DEFAULT_COMPANY: CompanyProfile = {
   mission: 'Build autonomous Voice AI agents, self-healing operating systems, and intelligent digital tools for global founders.',
   industry: 'Autonomous AI & Operating Systems',
   monthlyBudgetUsd: 1500,
-  spentBudgetUsd: 184.50,
+  spentBudgetUsd: 0,
   approvalThresholdUsd: 25.0,
-  onboardingCompleted: true,
+  onboardingCompleted: false,
   paperclipSyncEnabled: false,
   paperclipServerUrl: 'http://localhost:3100',
   paperclipApiKey: ''
@@ -87,10 +87,10 @@ const DEFAULT_AGENTS: CompanyAgent[] = [
     department: 'Executive',
     reportsTo: null,
     avatarColor: '#ff6a00',
-    status: 'working',
-    tasksCompleted: 48,
+    status: 'idle',
+    tasksCompleted: 0,
     budgetUsd: 600,
-    spentUsd: 74.20,
+    spentUsd: 0,
     modelPreference: 'auto',
     soulSnippet: 'Owns P&L, sets quarterly OKRs, leads executive heartbeats, and enforces ROI bets.'
   },
@@ -102,11 +102,10 @@ const DEFAULT_AGENTS: CompanyAgent[] = [
     department: 'Engineering',
     reportsTo: 'agent_hermes_ceo',
     avatarColor: '#38bdf8',
-    status: 'working',
-    currentTaskId: 'task_voice_duplex',
-    tasksCompleted: 82,
+    status: 'idle',
+    tasksCompleted: 0,
     budgetUsd: 400,
-    spentUsd: 58.10,
+    spentUsd: 0,
     modelPreference: 'Hermes-3-Llama-3.1-70B',
     soulSnippet: 'High-concurrency systems, low-latency audio pipelines, CUA Set-of-Marks computer vision.'
   },
@@ -119,9 +118,9 @@ const DEFAULT_AGENTS: CompanyAgent[] = [
     reportsTo: 'agent_hermes_ceo',
     avatarColor: '#a855f7',
     status: 'idle',
-    tasksCompleted: 35,
+    tasksCompleted: 0,
     budgetUsd: 250,
-    spentUsd: 22.80,
+    spentUsd: 0,
     modelPreference: 'gemini-3.8-flash',
     soulSnippet: 'Deep-dive competitive intelligence, API documentation audits, and paper synthesis.'
   },
@@ -134,9 +133,9 @@ const DEFAULT_AGENTS: CompanyAgent[] = [
     reportsTo: 'agent_hermes_ceo',
     avatarColor: '#f43f5e',
     status: 'idle',
-    tasksCompleted: 29,
+    tasksCompleted: 0,
     budgetUsd: 150,
-    spentUsd: 14.40,
+    spentUsd: 0,
     modelPreference: 'gemini-3.1-flash-lite',
     soulSnippet: 'Industrial 60-30-10 design system, fluid micro-interactions, accessible UI ergonomics.'
   },
@@ -148,90 +147,18 @@ const DEFAULT_AGENTS: CompanyAgent[] = [
     department: 'Operations',
     reportsTo: 'agent_atlas_cto',
     avatarColor: '#10b981',
-    status: 'reviewing',
-    currentTaskId: 'task_self_repair_patch',
-    tasksCompleted: 64,
+    status: 'idle',
+    tasksCompleted: 0,
     budgetUsd: 100,
-    spentUsd: 15.00,
+    spentUsd: 0,
     modelPreference: 'deepseek-reasoner',
     soulSnippet: 'Autonomous self-healing, sandbox isolation, rate limit mitigation, deadlock recovery.'
   }
 ]
 
-const DEFAULT_TASKS: CompanyTask[] = [
-  {
-    id: 'task_self_repair_patch',
-    title: 'Deploy Autonomous Self-Repair Subsystem to Production',
-    description: 'Verify 5-point automated health diagnostics (AudioContext, Gemini Brain Gate, IPC CUA Driver, Watchdog, Workspaces) and deploy hotfix.',
-    status: 'in_review',
-    priority: 'urgent',
-    assigneeAgentId: 'agent_aegis_qa',
-    goalTag: 'System Stability & Self-Healing',
-    budgetUsd: 20.0,
-    spentUsd: 12.5,
-    diffPreview: `+ apps/desktop/src/store/self-repair-engine.ts
-+ apps/desktop/src/app/voice-ai-os/self-repair-modal.tsx
-- RateLimitError: Fallback triggered to gemini-flash-latest
-+ Health score evaluated at 100% NOMINAL across all 5 subsystems`,
-    createdAt: Date.now() - 3600000 * 4,
-    updatedAt: Date.now() - 1800000
-  },
-  {
-    id: 'task_voice_duplex',
-    title: 'Optimize Gemini Aoede 16kHz Duplex Voice Pipeline',
-    description: 'Implement real-time barge-in interruption and auto-gain control to guarantee sub-200ms latency on spoken queries.',
-    status: 'in_progress',
-    priority: 'high',
-    assigneeAgentId: 'agent_atlas_cto',
-    goalTag: 'Voice AI OS Polish',
-    budgetUsd: 25.0,
-    spentUsd: 18.2,
-    diffPreview: `~ apps/desktop/src/store/voice-state.ts (AudioBuffer source normalization)
-~ handleSpokenCommand: added direct intent parser for Voice Company commands`,
-    createdAt: Date.now() - 3600000 * 8,
-    updatedAt: Date.now() - 900000
-  },
-  {
-    id: 'task_theme_60_30_10',
-    title: 'Apply 60-30-10 Industrial Theme (Matte Black / Storm Grey / Safety Orange)',
-    description: 'Enforce strict 60% matte black canvas, 30% storm grey containers, and 10% safety orange accents across all HUD elements.',
-    status: 'done',
-    priority: 'medium',
-    assigneeAgentId: 'agent_echo_design',
-    goalTag: 'UI/UX Visual System',
-    budgetUsd: 15.0,
-    spentUsd: 14.4,
-    diffPreview: `Enforced --industrial-matte-black, --industrial-storm-grey, and --industrial-safety-orange tokens across Voice AI OS root and orb visualizations.`,
-    createdAt: Date.now() - 3600000 * 24,
-    updatedAt: Date.now() - 3600000 * 2
-  },
-  {
-    id: 'task_stripe_checkout',
-    title: 'Automated Billing & Token Metering Integration',
-    description: 'Wire up Stripe checkout webhook and auto-pause agents when monthly budget reaches 95% threshold.',
-    status: 'todo',
-    priority: 'medium',
-    assigneeAgentId: 'agent_hermes_ceo',
-    goalTag: 'Company Monetization',
-    budgetUsd: 30.0,
-    spentUsd: 0.0,
-    createdAt: Date.now() - 3600000 * 12,
-    updatedAt: Date.now() - 3600000 * 12
-  },
-  {
-    id: 'task_competitor_teardown',
-    title: 'Benchmark Competitor Agent Swarms & Open-Source Orchestrators',
-    description: 'Extract best practices from Paperclip, Devin, and Claude Artifacts for autonomous developer productivity.',
-    status: 'todo',
-    priority: 'low',
-    assigneeAgentId: 'agent_nova_research',
-    goalTag: 'Strategic Intelligence',
-    budgetUsd: 15.0,
-    spentUsd: 0.0,
-    createdAt: Date.now() - 3600000 * 16,
-    updatedAt: Date.now() - 3600000 * 16
-  }
-]
+// A fresh Windows install must never claim fake completed tasks or charges.
+// The roster above consists of local role templates, not running agents.
+const DEFAULT_TASKS: CompanyTask[] = []
 
 // -------------------------------------------------------------
 // Nanostores with LocalStorage Persistence
@@ -245,7 +172,7 @@ function loadFromStorage<T>(key: string, fallback: T): T {
       const parsed = JSON.parse(raw) as T
       if (key === 'profile' && parsed && typeof parsed === 'object') {
         // Migrate older profiles that kept the Paperclip credential in plain text.
-        const safeProfile = { ...(parsed as CompanyProfile), paperclipApiKey: '' }
+        const safeProfile = { ...(parsed as unknown as CompanyProfile), paperclipApiKey: '' }
         localStorage.setItem(`hermes_company_${key}`, JSON.stringify(safeProfile))
         return safeProfile as unknown as T
       }
