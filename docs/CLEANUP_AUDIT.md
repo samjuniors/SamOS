@@ -52,3 +52,9 @@ English security policy, development guides, source, tests, copyright license, a
 - Preserved agent/tools/gateway/desktop/core tests/shared transport, as well as the plugin/skill catalogs and the MIT license.
 - **Important**: source-tree removal does not by itself shrink packaged Electron/Python payload or Git's preexisting history. Need real Windows installer measurements and targeted runtime dependency pruning.
 - Follow-up: audit `ui-tui/`, `web/`, unused channel backends, and upstream release automation; keep relevant regression fixtures and test gates before removing.
+
+## Upstream automation retired in cleanup pass 3
+
+Retired the original Hermes Docker build/publish, Nix flake, Termux, automatic canary, stable-release, stable-release-publication and catalog-maintenance workflows. These workflows are not the SamOS Windows Electron release contract. The old stable and canary release scripts remain as historical source references for later porting, but must not be used to publish a SamOS build. The draft still requires native Windows acceptance and package measurement.
+
+Note: This is **source/CI hygiene**, not proof of a smaller Windows binary. The inherited general-purpose CI is still present and may have Linux/backend test lanes; consider streamlining it only after the targeted Windows test gate passes.

@@ -8,3 +8,5 @@ SamOS targets **Windows Electron**. The original Hermes release workflows are re
 - `docs-site-checks.yml`, `deploy-site.yml`, `docs-search-monitor.yml`, and upstream `skills-index` site publishing have been removed.
 
 A passing source invariant does not replace a Windows real-host microphone/tool/browser/computer-use test. Do not merge the cleanup draft before Windows verification.
+
+Retired workflow families: Hermes Docker image publication, Nix flake validation, Termux packaging, the Hermes stable/canary release controllers, and upstream catalog maintenance. SamOS has not shipped a new replacement installer or release updater.
