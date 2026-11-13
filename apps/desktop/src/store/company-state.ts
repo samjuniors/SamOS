@@ -247,7 +247,7 @@ function loadFromStorage<T>(key: string, fallback: T): T {
         // Migrate older profiles that kept the Paperclip credential in plain text.
         const safeProfile = { ...(parsed as CompanyProfile), paperclipApiKey: '' }
         localStorage.setItem(`hermes_company_${key}`, JSON.stringify(safeProfile))
-        return safeProfile as T
+        return safeProfile as unknown as T
       }
       return parsed
     }
@@ -261,7 +261,7 @@ function saveToStorage<T>(key: string, value: T): void {
   if (typeof window === 'undefined') return
   try {
     const persistable = key === 'profile'
-      ? { ...(value as CompanyProfile), paperclipApiKey: '' }
+      ? { ...(value as unknown as CompanyProfile), paperclipApiKey: '' }
       : value
     localStorage.setItem(`hermes_company_${key}`, JSON.stringify(persistable))
   } catch {

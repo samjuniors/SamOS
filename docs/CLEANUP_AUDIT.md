@@ -44,3 +44,11 @@ English security policy, development guides, source, tests, copyright license, a
 - Confirm proprietary identity/config, packaging, updates, and OS-only installer behavior before further deleting code.
 
 **Branch policy:** perform large deletions on a review branch; do not merge or release before tests.
+
+## Cleanup pass 2 — Windows-first source trim
+
+- Removed upstream `website/` (791 files, 28,836,623 bytes) and `evals/` (343 files, 2,073,566 bytes), which are not packaged Electron runtime sources. Upstream remains accessible in NousResearch/hermes-agent.
+- Removed the related docs-site deploy/check/monitor workflows and upstream skills-index site publishing workflows. The umbrella CI no longer requires `docs-site`.
+- Preserved agent/tools/gateway/desktop/core tests/shared transport, as well as the plugin/skill catalogs and the MIT license.
+- **Important**: source-tree removal does not by itself shrink packaged Electron/Python payload or Git's preexisting history. Need real Windows installer measurements and targeted runtime dependency pruning.
+- Follow-up: audit `ui-tui/`, `web/`, unused channel backends, and upstream release automation; keep relevant regression fixtures and test gates before removing.

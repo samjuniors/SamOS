@@ -40,3 +40,7 @@ This repository is independently developed; the SamOS name does not imply endors
 ## Credential security notice
 
 An API key embedded in the imported desktop provider configuration has been removed from current source. **The key still exists in public Git history and must be revoked/rotated at the provider.** Never embed credentials in renderer code, presets, demos, or tests.
+
+## Lightweight Windows-first source tree
+
+The SamOS cleanup branch omits the upstream Hermes documentation website and standalone evaluation fixtures. Hermes's live execution engine and the SamOS Electron UI remain. The main optimization still pending is **measuring and pruning the packaged Windows payload** with a real Windows build; deleting source-only material does not directly reduce the installer size.

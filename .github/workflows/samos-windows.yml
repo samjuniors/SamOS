@@ -1,0 +1,44 @@
+name: SamOS Windows desktop checks
+
+on:
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/shared/**'
+      - 'agent/**'
+      - 'tui_gateway/**'
+      - 'scripts/ci/samos-prune-guard.mjs'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'pm/lock.json'
+      - '.github/workflows/samos-windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows Electron static build and tests
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install pinned Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@12.15.0
+      - name: Check source invariants
+        run: node scripts/ci/samos-prune-guard.mjs
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Desktop TypeScript checks
+        run: pnpm --dir apps/desktop run typecheck
+      - name: SamOS UI regression tests
+        run: pnpm --dir apps/desktop exec vitest run --project ui src/app/voice-ai-os/credential-storage.test.ts src/app/voice-ai-os/company-state.test.ts src/app/voice-ai-os/dynamic-model-routing.test.ts
+      - name: Renderer and Electron build
+        run: pnpm --dir apps/desktop run build
