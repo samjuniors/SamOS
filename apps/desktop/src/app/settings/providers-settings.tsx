@@ -281,15 +281,18 @@ function ConnectedProviderRow({
   const showHint = !canDisconnect && !terminalDisconnect
 
   return (
-    <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[6px] transition-colors hover:bg-(--ui-control-hover-background)">
+    <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[6px] border border-(--ui-stroke-secondary)/40 transition-[border-color,background-color] duration-150 motion-reduce:transition-none hover:border-(--ui-stroke-secondary) hover:bg-(--ui-control-hover-background)">
       <RowButton
         className="min-w-0 px-3 py-2.5 text-left"
         onClick={() => (terminalDisconnect ? onTerminalDisconnect(provider) : onSelect(provider))}
       >
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-[length:var(--conversation-text-font-size)] font-semibold">{title}</span>
-          <span className="inline-flex shrink-0 items-center gap-1 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-            <Check className="size-3" />
+          <span
+            className="inline-flex shrink-0 items-center gap-1 rounded-[6px] bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/25"
+            role="status"
+          >
+            <Check aria-hidden="true" className="size-3 stroke-[2.5]" />
             {copy.connected}
           </span>
         </div>
@@ -370,7 +373,7 @@ function LocalEndpointRow({ onOpen }: { onOpen: (reason: null | string) => void 
 
   return (
     <RowButton
-      className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[6px] px-3 py-2.5 text-left transition-colors hover:bg-(--ui-control-hover-background)"
+      className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[6px] border border-(--ui-stroke-secondary)/40 px-3 py-2.5 text-left transition-[border-color,background-color] duration-150 motion-reduce:transition-none hover:border-(--ui-stroke-secondary) hover:bg-(--ui-control-hover-background)"
       onClick={() => onOpen(null)}
     >
       <div className="flex min-w-0 flex-col gap-0.5">
@@ -379,7 +382,7 @@ function LocalEndpointRow({ onOpen }: { onOpen: (reason: null | string) => void 
           {copy.description}
         </span>
       </div>
-      <ChevronRight className="size-4 text-muted-foreground transition group-hover:text-foreground" />
+      <ChevronRight className="size-4 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none group-hover:text-foreground" />
     </RowButton>
   )
 }
