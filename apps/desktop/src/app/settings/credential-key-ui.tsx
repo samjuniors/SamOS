@@ -3,7 +3,7 @@ import { type ChangeEvent, type KeyboardEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { translateNow, useI18n } from '@/i18n'
-import { ChevronDown, ExternalLink, Loader2, Save, Trash2 } from '@/lib/icons'
+import { Check, ChevronDown, ExternalLink, Loader2, Save, Trash2 } from '@/lib/icons'
 import { isSubmitEnter } from '@/lib/ime'
 import { cn } from '@/lib/utils'
 import type { EnvVarInfo } from '@/types/hermes'
@@ -159,6 +159,31 @@ function CredentialDocsLink({ href }: { href: string }) {
   )
 }
 
+function CredentialStatusIndicator({ isSet, label }: { isSet: boolean; label?: string }) {
+  const statusLabel = isSet ? 'Configured' : 'Not configured'
+
+  return (
+    <span
+      aria-label={statusLabel}
+      className={cn(
+        'inline-flex size-3.5 shrink-0 items-center justify-center rounded-full text-[0.68rem] transition-colors',
+        isSet
+          ? 'bg-primary/20 text-primary ring-1 ring-primary/40'
+          : 'bg-(--ui-stroke-secondary)/40 text-muted-foreground/60'
+      )}
+      role="status"
+      title={`${label ? `${label}: ` : ''}${statusLabel}`}
+    >
+      {isSet ? (
+        <Check aria-hidden="true" className="size-2.5 stroke-[2.5]" />
+      ) : (
+        <span aria-hidden="true" className="size-1 rounded-full bg-current opacity-60" />
+      )}
+      <span className="sr-only">{statusLabel}</span>
+    </span>
+  )
+}
+
 /** One credential row — collapsible; description and docs link expand on click. */
 export function CredentialKeyCard({
   expanded,
@@ -177,10 +202,10 @@ export function CredentialKeyCard({
   return (
     <div
       className={cn(
-        '@container group/card rounded-[6px] p-3 transition-colors',
+        '@container group/card rounded-[6px] p-3 border border-(--ui-stroke-secondary)/40 transition-[border-color,background-color] duration-150 motion-reduce:transition-none',
         expandable && 'cursor-pointer',
-        expandable && !expanded && 'row-hover',
-        expanded && 'bg-(--ui-bg-quaternary) ring-1 ring-(--ui-stroke-secondary)'
+        expandable && !expanded && 'row-hover hover:border-(--ui-stroke-secondary)',
+        expanded && 'bg-(--ui-bg-quaternary) border-(--ui-stroke-secondary) ring-1 ring-(--ui-stroke-secondary)/30'
       )}
       onClick={expandable ? onToggle : undefined}
       onKeyDown={
@@ -208,9 +233,7 @@ export function CredentialKeyCard({
           The label row is h-8 to line up with the input row beside it. */}
       <div className={cn('grid grid-cols-1 items-start gap-x-3 gap-y-1.5 @2xl:gap-y-3', LIST_ROW_COLUMNS)}>
         <div className="flex h-8 min-w-0 items-center gap-2">
-          <span
-            className={cn('size-2 shrink-0 rounded-full', info.is_set ? 'bg-primary' : 'bg-(--ui-stroke-secondary)')}
-          />
+          <CredentialStatusIndicator isSet={info.is_set} label={label} />
 
           <span className="min-w-0 truncate text-[length:var(--conversation-text-font-size)] font-medium text-foreground">
             {label}
@@ -219,7 +242,7 @@ export function CredentialKeyCard({
           {expandable && (
             <ChevronDown
               className={cn(
-                'size-3.5 shrink-0 text-muted-foreground transition',
+                'size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none',
                 expanded ? 'rotate-180 opacity-100' : 'opacity-0 group-hover/card:opacity-100'
               )}
             />
@@ -264,10 +287,10 @@ export function ProviderKeyRows({ expanded, group, onExpand, onToggle, rowProps 
   return (
     <div
       className={cn(
-        '@container group/card rounded-[6px] p-3 transition-colors',
+        '@container group/card rounded-[6px] p-3 border border-(--ui-stroke-secondary)/40 transition-[border-color,background-color] duration-150 motion-reduce:transition-none',
         expandable && 'cursor-pointer',
-        expandable && !expanded && 'row-hover',
-        expanded && 'bg-(--ui-bg-quaternary) ring-1 ring-(--ui-stroke-secondary)'
+        expandable && !expanded && 'row-hover hover:border-(--ui-stroke-secondary)',
+        expanded && 'bg-(--ui-bg-quaternary) border-(--ui-stroke-secondary) ring-1 ring-(--ui-stroke-secondary)/30'
       )}
       onClick={expandable ? onToggle : undefined}
       onKeyDown={
@@ -294,12 +317,7 @@ export function ProviderKeyRows({ expanded, group, onExpand, onToggle, rowProps 
           gap-3, items-start, label row h-8 to line up with the input row. */}
       <div className={cn('grid grid-cols-1 items-start gap-x-3 gap-y-1.5 @2xl:gap-y-3', LIST_ROW_COLUMNS)}>
         <div className="flex h-8 min-w-0 items-center gap-2">
-          <span
-            className={cn(
-              'size-2 shrink-0 rounded-full',
-              group.hasAnySet ? 'bg-primary' : 'bg-(--ui-stroke-secondary)'
-            )}
-          />
+          <CredentialStatusIndicator isSet={group.hasAnySet} label={group.name} />
 
           <span className="min-w-0 truncate text-[length:var(--conversation-text-font-size)] font-medium text-foreground">
             {group.name}
@@ -308,7 +326,7 @@ export function ProviderKeyRows({ expanded, group, onExpand, onToggle, rowProps 
           {expandable && (
             <ChevronDown
               className={cn(
-                'size-3.5 shrink-0 text-muted-foreground transition',
+                'size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none',
                 expanded ? 'rotate-180 opacity-100' : 'opacity-0 group-hover/card:opacity-100'
               )}
             />
