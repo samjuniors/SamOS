@@ -71,8 +71,8 @@ export function setVoiceTranscript(transcript: VoiceTranscriptPayload): void {
   $voiceTranscript.set(transcript)
 }
 
-/** User barge-in interrupt: instantly stops TTS and switches back to LISTENING or IDLE */
-export async function interruptVoice(): Promise<void> {
+/** Stop playback locally without recursively invoking the Electron IPC interrupt. */
+function stopLocalVoicePlayback(): void {
   if (currentAudio) {
     currentAudio.pause()
     currentAudio.src = ''
@@ -84,12 +84,16 @@ export async function interruptVoice(): Promise<void> {
   }
 
   currentUtterance = null
-
   const currentState = $voiceState.get()
 
   if (currentState === 'SPEAKING' || currentState === 'THINKING' || currentState === 'CUA_ACTIVE') {
     $voiceState.set('IDLE')
   }
+}
+
+/** User barge-in interrupt: instantly stop TTS and notify Electron. */
+export async function interruptVoice(): Promise<void> {
+  stopLocalVoicePlayback()
 
   const voiceApi = (window as unknown as { hermesDesktop?: { voice?: { interrupt: () => Promise<void> } } }).hermesDesktop?.voice
 
@@ -97,7 +101,7 @@ export async function interruptVoice(): Promise<void> {
     try {
       await voiceApi.interrupt()
     } catch {
-      // IPC interrupt fallback handled gracefully
+      // Local playback still stops when Electron is unavailable.
     }
   }
 }
@@ -993,6 +997,7 @@ export function initVoiceStateIpc(): () => void {
         onWakeWord?: (cb: (ev: WakeWordEvent) => void) => () => void
         onAudioStream?: (cb: (chunk: AudioChunkPayload) => void) => () => void
         onTranscript?: (cb: (t: VoiceTranscriptPayload) => void) => () => void
+        onInterrupted?: (cb: () => void) => () => void
       }
     }
   }).hermesDesktop?.voice
@@ -1021,6 +1026,14 @@ export function initVoiceStateIpc(): () => void {
 
     if (voiceApi.onAudioStream) {
       unsubs.push(voiceApi.onAudioStream(chunk => setVoiceRmsLevel(chunk.rmsLevel)))
+    }
+
+    if (voiceApi.onInterrupted) {
+      unsubs.push(voiceApi.onInterrupted(() => {
+        // The native ESC event must stop renderer audio, without sending IPC
+        // back to Electron and triggering a recursive interruption loop.
+        stopLocalVoicePlayback()
+      }))
     }
 
     if (voiceApi.onTranscript) {
