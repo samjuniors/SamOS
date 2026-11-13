@@ -21,8 +21,8 @@ Branch: `chore/samos-cleanup-consolidated`. GitHub draft PR: #7. This is a **sta
 1. `apps/desktop/electron-builder.config.cjs` whitelists `dist/**`, `assets/**`, `public/**`, `package.json` for Electron application files. For `HERMES_DESKTOP_VARIANT=bundled` or `store`, it additionally copies `build/agent-payload` into resources.
 2. `scripts/bundles/payload.py` already excludes docs/tests/website/evals/apps/ui-tui/web/scripts from agent snapshots. The consolidated branch also excludes contributor archives. **Removing source directories does not prove installer size improvement.**
 3. `apps/desktop/package.json` default `payload` and inherited `dist:bundled` still select the full frontend build. The explicit `payload:samos` profile passes `--frontend-profile electron-only` to `scripts/bundles/stage.py`, which passes zero frontends to `stage_native`.
-4. `pack:samos:unpacked` now links the lean profile into a **non-publishing** bundled Windows x64 unpacked build; static contract test checks its script wiring. No bundle execution has been performed.
-5. `.github/workflows/samos-windows.yml` currently packages the **unbundled desktop shell** only, while also running the agent profile selection test. Report this shell size separately from the agent-inclusive package. Neither alone proves final signed MSIX bytes.
+4. `pack:samos:unpacked` links the lean profile into a **non-publishing** bundled Windows x64 unpacked build; static contract tests check its script wiring. GitHub Actions runs this package command on Windows. That CI execution does not by itself establish that Sofia voice, Hermes tools, or updater work in a launched/installed app.
+5. `.github/workflows/samos-windows.yml` now runs `pack:samos:unpacked` on `windows-latest` after UI and Electron tests. This stages the explicit `electron-only` Python agent payload and builds an **agent-inclusive unsigned unpacked Windows x64 package**. The workflow writes `samos-windows-size.json` and uploads that size report; it does not publish an installer or verify signed MSIX size, installation, update, or runtime launch. Compare these numbers only to equivalent agent-inclusive unpacked builds, not shell-only builds.
 
 ## Critical blockers before merge / release
 
@@ -34,7 +34,7 @@ Branch: `chore/samos-cleanup-consolidated`. GitHub draft PR: #7. This is a **sta
 
 ## Next safe work
 
-1. Let PR #7 CI finish; inspect failing jobs/steps and repair only confirmed failures.
+1. Check PR #7 CI results at the current head and inspect failing job steps; repair only confirmed failures. Windows lint passed on the 2026-11-13 run while Windows packaging was still running at last inspection. Re-check after any new commit.
 2. On an authorized Windows host: install locked dependencies, run `pack:samos:unpacked`, verify backend+UI IPC and voice/tool execution, capture unpacked/Msix sizes and path inventories.
 3. Map remaining optional TUI/web imports and tests before any further deletions; preserve user-facing and agent capabilities.
 4. Keep PR #7 draft, `main` untouched and all releases unpublished until acceptance.
