@@ -1,0 +1,308 @@
+/* ==========================================================================
+   Voice AI Operating System (AI OS) Shell Styles
+   Industrial Design System: 60-30-10 Golden Ratio
+   - 60% Matte Black (Dominant Obsidian Canvas)
+   - 30% Storm Grey (Architectural Aerospace Steel & Structures)
+   - 10% Safety Orange (High-Voltage Focus & Autonomous Diagnostics)
+   ========================================================================== */
+
+:root {
+  /* 60% Matte Black Canvas & Acrylic */
+  --theme-matte-black: #0c0e12;
+  --theme-matte-surface: #101318;
+  --theme-matte-elevated: #14171f;
+  --voice-os-mica-bg: rgba(12, 14, 18, 0.88);
+  --voice-os-acrylic-bg: rgba(16, 19, 24, 0.75);
+
+  /* 30% Storm Grey Structural Architecture */
+  --theme-storm-grey-dark: #1b202a;
+  --theme-storm-grey: #262c37;
+  --theme-storm-grey-hover: #333a49;
+  --theme-storm-grey-light: #475165;
+  --theme-storm-grey-text: #9aa5b8;
+  --voice-os-card-bg: rgba(20, 23, 31, 0.72);
+  --voice-os-card-hover-bg: rgba(27, 32, 42, 0.88);
+  --voice-os-border: rgba(51, 58, 73, 0.65);
+  --voice-os-border-glow: rgba(71, 81, 101, 0.85);
+  --voice-os-highlight: rgba(255, 255, 255, 0.04);
+
+  /* 10% Safety Orange High-Contrast Hero Accent */
+  --theme-safety-orange: #ff6a00;
+  --theme-safety-orange-hover: #ff7f24;
+  --theme-safety-orange-subtle: rgba(255, 106, 0, 0.15);
+  --theme-safety-orange-glow: 0 0 24px rgba(255, 106, 0, 0.5), 0 0 48px rgba(255, 106, 0, 0.22);
+
+  /* Status Colors */
+  --status-idle: #9aa5b8;
+  --status-listening: #ff6a00;
+  --status-thinking: #ff7f24;
+  --status-speaking: #ff944d;
+  --status-cua: #ff5500;
+  --status-delegating: #ff7f24;
+
+  /* Glow shadows */
+  --glow-idle: 0 0 16px rgba(154, 165, 184, 0.22);
+  --glow-listening: 0 0 28px rgba(255, 106, 0, 0.55), 0 0 56px rgba(255, 106, 0, 0.25);
+  --glow-thinking: 0 0 28px rgba(255, 127, 36, 0.55), 0 0 56px rgba(255, 127, 36, 0.25);
+  --glow-speaking: 0 0 28px rgba(255, 148, 77, 0.52), 0 0 54px rgba(255, 148, 77, 0.22);
+  --glow-cua: 0 0 30px rgba(255, 85, 0, 0.6), 0 0 60px rgba(255, 85, 0, 0.3);
+  --glow-delegating: 0 0 28px rgba(255, 127, 36, 0.5), 0 0 54px rgba(255, 127, 36, 0.22);
+}
+
+/* Glass Panels with Windows 11 Acrylic / Mica Fallback */
+.voice-os-glass {
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  background: var(--voice-os-mica-bg);
+  border: 1px solid var(--voice-os-border);
+  box-shadow:
+    0 16px 40px -10px rgba(0, 0, 0, 0.5),
+    0 0 0 1px var(--voice-os-highlight) inset;
+}
+
+.voice-os-glass-card {
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  background: var(--voice-os-card-bg);
+  border: 1px solid var(--voice-os-border);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
+  transition: all 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.voice-os-glass-card:hover {
+  background: var(--voice-os-card-hover-bg);
+  border-color: var(--voice-os-border-glow);
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.45);
+}
+
+/* --------------------------------------------------------------------------
+   Voice HUD Orb Animations & Pulses
+   -------------------------------------------------------------------------- */
+
+.voice-orb-glow {
+  border-radius: 9999px;
+  position: relative;
+  transition: box-shadow 350ms ease, border-color 350ms ease, background 350ms ease;
+}
+
+.voice-orb-glow[data-state='IDLE'] {
+  box-shadow: var(--glow-idle);
+  border-color: rgba(154, 165, 184, 0.35);
+}
+
+.voice-orb-glow[data-state='LISTENING'] {
+  box-shadow: var(--glow-listening);
+  border-color: rgba(255, 106, 0, 0.85);
+  animation: voice-pulse-listening 2s infinite ease-in-out;
+}
+
+.voice-orb-glow[data-state='THINKING'] {
+  box-shadow: var(--glow-thinking);
+  border-color: rgba(255, 127, 36, 0.85);
+  animation: voice-aurora-spin 3s infinite linear;
+}
+
+.voice-orb-glow[data-state='SPEAKING'] {
+  box-shadow: var(--glow-speaking);
+  border-color: rgba(255, 148, 77, 0.85);
+  animation: voice-pulse-speaking 1.8s infinite ease-in-out;
+}
+
+.voice-orb-glow[data-state='CUA_ACTIVE'] {
+  box-shadow: var(--glow-cua);
+  border-color: rgba(255, 85, 0, 0.95);
+  animation: voice-pulse-cua 1.5s infinite ease-in-out;
+}
+
+.voice-orb-glow[data-state='DELEGATING'] {
+  box-shadow: var(--glow-delegating);
+  border-color: rgba(255, 127, 36, 0.85);
+  animation: voice-pulse-delegating 2.2s infinite ease-in-out;
+}
+
+/* Keyframes */
+@keyframes voice-pulse-listening {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 106, 0, 0.45), 0 0 40px rgba(255, 106, 0, 0.2);
+  }
+  50% {
+    transform: scale(1.035);
+    box-shadow: 0 0 34px rgba(255, 106, 0, 0.7), 0 0 68px rgba(255, 106, 0, 0.35);
+  }
+}
+
+@keyframes voice-aurora-spin {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    filter: hue-rotate(30deg);
+  }
+  100% {
+    filter: hue-rotate(0deg);
+  }
+}
+
+@keyframes voice-pulse-speaking {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 148, 77, 0.45);
+  }
+  50% {
+    transform: scale(1.025);
+    box-shadow: 0 0 34px rgba(255, 148, 77, 0.7), 0 0 60px rgba(255, 148, 77, 0.3);
+  }
+}
+
+@keyframes voice-pulse-cua {
+  0%, 100% {
+    transform: scale(1);
+    border-color: rgba(255, 85, 0, 0.7);
+  }
+  50% {
+    transform: scale(1.03);
+    border-color: rgba(255, 85, 0, 1);
+    box-shadow: 0 0 34px rgba(255, 85, 0, 0.75), 0 0 68px rgba(255, 85, 0, 0.4);
+  }
+}
+
+@keyframes voice-pulse-delegating {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(255, 127, 36, 0.4);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 32px rgba(255, 127, 36, 0.65), 0 0 54px rgba(255, 127, 36, 0.3);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Audio Waveform Visualizer
+   -------------------------------------------------------------------------- */
+
+.waveform-bar {
+  border-radius: 9999px;
+  transform-origin: center bottom;
+  transition: height 80ms ease, background-color 200ms ease;
+}
+
+/* --------------------------------------------------------------------------
+   Computer Use Agent (CUA) Set-of-Marks Overlay
+   -------------------------------------------------------------------------- */
+
+.cua-overlay-root {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.cua-som-badge {
+  pointer-events: auto;
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ff6a00;
+  color: #0c0e12;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 800;
+  font-size: 11px;
+  line-height: 1;
+  padding: 2.5px 6.5px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.8);
+  box-shadow: 0 2px 10px rgba(255, 106, 0, 0.4);
+  transform: translate(-50%, -50%);
+  user-select: none;
+  z-index: 10001;
+  transition: transform 120ms ease, background-color 150ms ease;
+}
+
+.cua-som-badge:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+  background: #ff7f24;
+}
+
+.cua-target-box {
+  pointer-events: none;
+  position: absolute;
+  border: 2px solid rgba(255, 106, 0, 0.9);
+  background: rgba(255, 106, 0, 0.12);
+  border-radius: 4px;
+  box-shadow: 0 0 20px rgba(255, 106, 0, 0.4);
+  transition: all 180ms ease-out;
+  z-index: 10000;
+}
+
+.cua-click-ripple {
+  pointer-events: none;
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  margin-top: -26px;
+  border-radius: 50%;
+  border: 3px solid #ff6a00;
+  background: rgba(255, 106, 0, 0.35);
+  animation: cua-ripple-expand 600ms cubic-bezier(0, 0.2, 0.8, 1) forwards;
+  z-index: 10002;
+}
+
+@keyframes cua-ripple-expand {
+  0% {
+    transform: scale(0.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Safety Killswitch Badge */
+.cua-killswitch-pill {
+  backdrop-filter: blur(16px);
+  background: rgba(220, 38, 38, 0.88);
+  border: 1px solid rgba(254, 202, 202, 0.4);
+  box-shadow:
+    0 4px 20px rgba(220, 38, 38, 0.5),
+    0 0 12px rgba(239, 68, 68, 0.3) inset;
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.cua-killswitch-pill:hover {
+  background: rgba(239, 68, 68, 0.96);
+  transform: scale(1.04);
+}
+
+/* --------------------------------------------------------------------------
+   Accessibility & Reduced Motion
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-orb-glow,
+  .voice-orb-glow[data-state='LISTENING'],
+  .voice-orb-glow[data-state='THINKING'],
+  .voice-orb-glow[data-state='SPEAKING'],
+  .voice-orb-glow[data-state='CUA_ACTIVE'],
+  .voice-orb-glow[data-state='DELEGATING'] {
+    animation: none !important;
+    transition: opacity 150ms ease !important;
+  }
+
+  .cua-click-ripple {
+    animation-duration: 150ms;
+  }
+
+  .voice-os-glass-card {
+    transition: none !important;
+  }
+}
+
