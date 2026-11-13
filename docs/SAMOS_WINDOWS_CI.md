@@ -23,3 +23,6 @@ The existing Windows install/update and desktop attach workflows remain preserve
 - `pnpm --dir apps/desktop run payload:samos` explicitly passes `--frontend-profile electron-only` to the native bundle stage driver.
 - Default `pnpm --dir apps/desktop run payload` still builds the existing TUI, web and webapp products; no release behavior changes yet.
 - `tests/scripts/test_samos_windows_bundle_profile.py` checks profile selection, no frontend staging, and rejection of conflicting explicit UI products.
+
+## Full agent-inclusive package (not part of the default CI lane)
+Run `pnpm --dir apps/desktop run pack:samos:unpacked` on a verified Windows build machine to stage the electron-only Hermes Python runtime and include it in the unpacked `bundled` Electron app. The CI workflow's normal `builder --dir` command measures only the desktop shell. Do not compare the shell-only byte count to an agent-inclusive build as though they were equivalent. This optional command is not a signed MSIX release.

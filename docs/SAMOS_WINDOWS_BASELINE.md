@@ -35,3 +35,9 @@ On Windows: install pinned toolchain, run desktop typecheck, unit tests, Electro
 - Removed five site-only workflows, site-only tests and retired docs-only just targets.
 - Removed the site-specific job from the umbrella CI gate and added a separate Windows Electron build-and-size workflow. Windows runtime acceptance is still pending.
 - Retained web/TUI runtime, backend, skills/tools, and shared cross-platform build helpers pending dependency verification.
+
+## Pass 4 — explicit unpacked Windows agent package command
+- Added `pnpm --dir apps/desktop run pack:samos:unpacked` as a **non-publishing**, experimental Windows x64 packaging path. It stages only the Hermes agent backend (`payload:samos`), builds Electron, then includes the staged agent using the existing `bundled` variant.
+- Retained the upstream `payload`, `dist:bundled` and `dist:win` commands unchanged to avoid breaking compatibility.
+- The regular Windows CI `builder --dir` lane is a **desktop-shell package-size baseline**. It does not build a sealed agent payload. Use the new command in a real Windows acceptance run to measure **full bundled agent size** separately.
+- The bundled variant still carries Hermes product identity: do not publish or install over production profiles before SamOS branding, signing and updater ownership are audited.
