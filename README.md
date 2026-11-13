@@ -28,7 +28,7 @@ Windows launch, microphone, actual Hermes tool calls, Paperclip connectivity, an
 - Hermes is the execution authority for models, sessions, tools, skills, and agents.
 - Paperclip, when integrated, should own organization/task/budget governance over a well-defined adapter, not an imitation implemented only inside React.
 - Never silently fake completed tasks, verified self-repairs, successful external syncs, or API usage.
-- User keys must not be written to plain browser `localStorage`; use an appropriate protected credential store before production use.
+- SamOS cloud and Paperclip API keys are now session-only in UI state; prior browser-storage secrets are scrubbed on load. Implement OS-protected secrets and backend-only provider calls before production.
 - Keep operations auditable, with explicit user approval for consequential automation and a reliable cancel/stop path.
 
 ## Upstream credits and license
@@ -36,3 +36,7 @@ Windows launch, microphone, actual Hermes tool calls, Paperclip connectivity, an
 SamOS includes code from **Nous Research's Hermes Agent**, licensed under the MIT License. See [LICENSE](LICENSE) for the upstream copyright and terms. Preserve original copyright and attribution notices where applicable. Paperclip is an external upstream project and is not vendored as a complete functional runtime in this repository.
 
 This repository is independently developed; the SamOS name does not imply endorsement by upstream projects.
+
+## Credential security notice
+
+An API key embedded in the imported desktop provider configuration has been removed from current source. **The key still exists in public Git history and must be revoked/rotated at the provider.** Never embed credentials in renderer code, presets, demos, or tests.

@@ -36,7 +36,7 @@ const UI_OVERRIDES_KEY = 'hermes_ai_provider_ui_overrides'
 const BASELINE_DEFAULTS: AIProviderConfig = {
   mode: 'cloud',
   cloudProvider: 'gemini',
-  cloudApiKey: 'AQ.Ab8RN6LneQSowdBs768dnC0okpP1521KA9JUPkZyYmt-AFAh-A',
+  cloudApiKey: '',
   cloudModel: 'gemini-flash-latest',
   routingStrategy: 'dynamic_smart',
   tier1FreeModel: 'gemini-3.1-flash-lite',
@@ -68,7 +68,14 @@ function loadSavedOverrides(): Partial<AIProviderConfig> {
   try {
     const raw = localStorage.getItem(UI_OVERRIDES_KEY)
     if (raw) {
-      return JSON.parse(raw)
+      const parsed = JSON.parse(raw) as Partial<AIProviderConfig>
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+      // Scrub keys previously persisted by older SamOS versions.
+      if (Object.prototype.hasOwnProperty.call(parsed, 'cloudApiKey')) {
+        delete parsed.cloudApiKey
+        localStorage.setItem(UI_OVERRIDES_KEY, JSON.stringify(parsed))
+      }
+      return parsed
     }
   } catch {
     // fallback
@@ -246,7 +253,10 @@ export function setAiProviderConfig(update: Partial<AIProviderConfig>): void {
   $uiOverrides.set(nextOverrides)
 
   try {
-    localStorage.setItem(UI_OVERRIDES_KEY, JSON.stringify(nextOverrides))
+    // Keep secrets in memory for this session; never persist to browser storage.
+    const persistableOverrides = { ...nextOverrides }
+    delete persistableOverrides.cloudApiKey
+    localStorage.setItem(UI_OVERRIDES_KEY, JSON.stringify(persistableOverrides))
   } catch {
     // ignore
   }

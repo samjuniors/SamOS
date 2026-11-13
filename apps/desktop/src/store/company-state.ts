@@ -241,7 +241,16 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback
   try {
     const raw = localStorage.getItem(`hermes_company_${key}`)
-    if (raw) return JSON.parse(raw) as T
+    if (raw) {
+      const parsed = JSON.parse(raw) as T
+      if (key === 'profile' && parsed && typeof parsed === 'object') {
+        // Migrate older profiles that kept the Paperclip credential in plain text.
+        const safeProfile = { ...(parsed as CompanyProfile), paperclipApiKey: '' }
+        localStorage.setItem(`hermes_company_${key}`, JSON.stringify(safeProfile))
+        return safeProfile as T
+      }
+      return parsed
+    }
   } catch {
     // Ignore storage parse issues
   }
@@ -251,7 +260,10 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 function saveToStorage<T>(key: string, value: T): void {
   if (typeof window === 'undefined') return
   try {
-    localStorage.setItem(`hermes_company_${key}`, JSON.stringify(value))
+    const persistable = key === 'profile'
+      ? { ...(value as CompanyProfile), paperclipApiKey: '' }
+      : value
+    localStorage.setItem(`hermes_company_${key}`, JSON.stringify(persistable))
   } catch {
     // Ignore storage write issues
   }
@@ -422,54 +434,15 @@ export function rejectCompanyTask(taskId: string, feedback: string): void {
 }
 
 /**
- * Autonomous Heartbeat Cycle:
- * Executes Paperclip CEO Heartbeat Checklist:
- * 1. Checks assignees & local planning
- * 2. Advances active in_progress tasks
- * 3. Escalates completed work into in_review Approval Gate
- * 4. Checks out highest priority backlog task
+ * Local-only coordination check. Until a real Paperclip adapter reports work,
+ * never fabricate agent completion, expenditure, or external synchronization.
  */
 export async function runCompanyHeartbeat(): Promise<void> {
   if ($isHeartbeatRunning.get()) return
   $isHeartbeatRunning.set(true)
 
-  addHeartbeatLog('--- Autonomous Heartbeat Cycle Started ---')
-
   try {
-    const tasks = [...$companyTasks.get()]
-    const agents = [...$companyAgents.get()]
-
-    // 1. Advance in_progress tasks
-    const inProgressTasks = tasks.filter(t => t.status === 'in_progress')
-    for (const task of inProgressTasks) {
-      // Simulate progression into in_review (Approval Gate)
-      task.status = 'in_review'
-      task.spentUsd = Number((task.spentUsd + 4.50).toFixed(2))
-      task.diffPreview = task.diffPreview || `Changes completed by ${getAgentName(task.assigneeAgentId)}.\nReady for founder diff review and merge.`
-      task.updatedAt = Date.now()
-
-      addHeartbeatLog(`Agent ${getAgentName(task.assigneeAgentId)} completed draft for "${task.title}". Transferred to Approval Gate.`)
-    }
-
-    // 2. Assign idle agents to todo tasks
-    const todoTasks = tasks.filter(t => t.status === 'todo')
-    if (todoTasks.length > 0) {
-      const nextTask = todoTasks[0]
-      nextTask.status = 'in_progress'
-      nextTask.updatedAt = Date.now()
-
-      const agent = agents.find(a => a.id === nextTask.assigneeAgentId)
-      if (agent) {
-        agent.status = 'working'
-        agent.currentTaskId = nextTask.id
-      }
-
-      addHeartbeatLog(`Checked out task "${nextTask.title}" -> ${getAgentName(nextTask.assigneeAgentId)} is actively working.`)
-    }
-
-    $companyTasks.set(tasks)
-    $companyAgents.set(agents)
-    addHeartbeatLog('--- Heartbeat Cycle Completed: Roster Synchronized ---')
+    addHeartbeatLog('[LOCAL ONLY] Paperclip execution is not connected. No agents launched, tasks completed, or budget charged.')
   } finally {
     $isHeartbeatRunning.set(false)
   }

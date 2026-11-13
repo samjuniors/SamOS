@@ -390,7 +390,7 @@ function evaluateSemanticHeuristics(
       thought: 'User wants heartbeat synchronization',
       action: 'COMPANY_HEARTBEAT',
       params: {},
-      spokenReply: 'Autonomous heartbeat executed. All agents and goal boards are synchronized.'
+      spokenReply: 'Local coordination check complete. Paperclip is not connected; no agent tasks were executed.'
     }
   }
 

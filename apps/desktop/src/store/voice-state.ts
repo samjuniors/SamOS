@@ -181,7 +181,7 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
 
     if (lower.includes('heartbeat')) {
       await runCompanyHeartbeat()
-      return "Autonomous heartbeat executed. All company agents and tasks are synchronized with the strategic goal board."
+      return "Local check complete. Paperclip is not yet connected; no agent tasks were executed."
     }
 
     if (lower.includes('approve')) {

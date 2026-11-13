@@ -156,7 +156,7 @@ export function CompanyView() {
   const handleTriggerHeartbeat = async () => {
     await runCompanyHeartbeat()
     void speakCompanionText(
-      `Heartbeat complete. All autonomous agents synced with our company goal board.`
+      'Local coordination check complete. Paperclip is not connected; no agent tasks were executed.'
     )
   }
 
@@ -172,7 +172,7 @@ export function CompanyView() {
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-white tracking-tight">{profile.name}</h2>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#1b202a] text-[#ff7f24] border border-[#ff6a00]/30">
-                Paperclip Core
+                Local prototype · Paperclip disconnected
               </span>
             </div>
             <p className="text-xs text-[#9aa5b8] truncate max-w-xl">{profile.mission}</p>
@@ -216,12 +216,12 @@ export function CompanyView() {
             onClick={handleTriggerHeartbeat}
             disabled={isHeartbeatRunning}
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#1b202a] hover:bg-[#262c37] border border-[#ff6a00]/40 text-xs font-medium text-slate-200 transition-all cursor-pointer shadow-sm hover:border-[#ff6a00]"
-            title="Execute Paperclip CEO Heartbeat Checklist"
+            title="Check local coordination status (no real Paperclip execution)"
           >
             <RefreshCw
               className={`size-3.5 text-[#ff6a00] ${isHeartbeatRunning ? 'animate-spin' : ''}`}
             />
-            <span>{isHeartbeatRunning ? 'Running Heartbeat...' : 'Trigger Heartbeat'}</span>
+            <span>{isHeartbeatRunning ? 'Checking...' : 'Check Coordination'}</span>
           </button>
 
           {/* Quick Onboarding / Edit Trigger */}

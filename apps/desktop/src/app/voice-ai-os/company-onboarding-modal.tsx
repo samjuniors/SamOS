@@ -60,7 +60,7 @@ export function CompanyOnboardingModal() {
 
     // Hermes Aoede voice confirmation
     void speakCompanionText(
-      `Welcome Founder. ${companyName || 'Your company'} is officially registered on Paperclip. I have established our executive roster and queued our first milestone.`
+      `Welcome Founder. ${companyName || 'Your company'} is saved locally in SamOS. Paperclip is not connected; no external agents were started.`
     )
   }
 
