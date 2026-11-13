@@ -465,6 +465,16 @@ describe('ProvidersSettings', () => {
     await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled())
   })
 
+  it('does not redirect local-model settings to API keys when OAuth providers are absent', async () => {
+    listOAuthProviders.mockResolvedValue({ providers: [] })
+    getEnvVars.mockResolvedValue({})
+
+    render(<ProvidersSettings onClose={vi.fn()} onViewChange={vi.fn()} view="local" />)
+
+    await waitFor(() => expect(getEnvVars).toHaveBeenCalled())
+    expect(screen.queryByText('Local / custom endpoint')).toBeNull()
+  })
+
   it('offers a Local / custom endpoint entry in the API-keys tab that opens the custom-endpoint flow', async () => {
     // Regression: the composer pill and the providers "have an API key"
     // affordance both dead-end on the env-var-driven key catalog, which never
