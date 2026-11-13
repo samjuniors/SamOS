@@ -96,3 +96,28 @@ def test_launcher_runs_a_named_module_like_the_store_launcher(tmp_path):
         assert (result.returncode, result.stdout) == (2, ""), name
         assert "--run-module needs a module" in result.stderr
     assert run("--run-module").returncode == 2
+
+
+def test_windows_agent_payload_excludes_non_runtime_contributor_archive(tmp_path):
+    """Contributor archives are not needed by the shipped agent; source keeps them."""
+    from scripts.bundles.payload import INERT_SNAPSHOT_DIRS
+
+    repo = tmp_path / "source"
+    repo.mkdir()
+    for relative in ("agent/entry.py", "contributors/emails/example.txt",
+                     "website/index.md", "tests/sample.py"):
+        path = repo / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("fixture", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(repo), "-c", "user.name=SamOS Test",
+                    "-c", "user.email=samos@example.invalid", "commit", "-qm", "fixture"], check=True)
+
+    out = tmp_path / "out"
+    assert "contributors" in INERT_SNAPSHOT_DIRS
+    snapshot(repo, "HEAD", out, exclude=INERT_SNAPSHOT_DIRS)
+    assert (out / "agent/entry.py").is_file()
+    assert not (out / "contributors").exists()
+    assert not (out / "website").exists()
+    assert not (out / "tests").exists()
