@@ -841,7 +841,9 @@ export async function startHandsfreeAudio(): Promise<void> {
               if (mediaRecorder.state === 'recording') {
                 try {
                   mediaRecorder.stop()
-                } catch {}
+                } catch {
+                  // Recorder or media track may already be stopped during cancellation.
+                }
               }
 
               mediaRecorder = null
@@ -874,7 +876,9 @@ export function stopHandsfreeMic(): void {
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     try {
       mediaRecorder.stop()
-    } catch {}
+    } catch {
+                  // Recorder or media track may already be stopped during cancellation.
+                }
   }
 
   mediaRecorder = null
