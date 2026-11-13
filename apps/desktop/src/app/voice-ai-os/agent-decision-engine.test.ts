@@ -89,8 +89,11 @@ describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, ()
   it('dynamically extracts note content and launches Notepad via CUA', async () => {
     const launchApp = vi.fn().mockResolvedValue({ success: true })
     const typeText = vi.fn().mockResolvedValue({ success: true })
+
     const previousDesktop = (window as any).hermesDesktop
+
     ;(window as any).hermesDesktop = { cua: { launchApp, typeText } }
+
     try {
     const reply = await decideAndExecuteAgentAction('Write down a note: server deployment is at midnight')
 
@@ -105,7 +108,9 @@ describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, ()
 
   it('does not report launching an app when desktop computer-use is unavailable', async () => {
     const previousDesktop = (window as any).hermesDesktop
+
     ;(window as any).hermesDesktop = undefined
+
     try {
       const reply = await decideAndExecuteAgentAction('Open calculator')
       expect(reply).toMatch(/not connected/i)
@@ -117,9 +122,11 @@ describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, ()
 
   it('reports an explicit IPC denial without claiming a successful launch', async () => {
     const previousDesktop = (window as any).hermesDesktop
+
     ;(window as any).hermesDesktop = {
       cua: { launchApp: vi.fn().mockResolvedValue({ success: false, error: 'not approved' }) }
     }
+
     try {
       const reply = await decideAndExecuteAgentAction('Open calculator')
       expect(reply).toMatch(/could not launch/i)

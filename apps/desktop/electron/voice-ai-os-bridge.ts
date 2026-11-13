@@ -518,16 +518,19 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
 
     try {
       const targetBinary = resolveCuaLaunchTarget(appName, args)
+
       if (!targetBinary) {
         return { success: false, error: 'This app or its arguments are not approved for voice computer-use.' }
       }
 
       const { spawn } = await import('node:child_process')
+
       const child = spawn(targetBinary, [], {
         detached: true,
         stdio: 'ignore',
         shell: false
       })
+
       // Node emits spawn errors asynchronously. Do not claim success until
       // the OS has accepted the exact allowlisted executable.
       await new Promise<void>((resolve, reject) => {
@@ -562,12 +565,14 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
       // Keep the user's text out of shell command strings entirely. Encode
       // UTF-16LE data, then escape only the SendKeys meta-characters in PS.
       const textBase64 = Buffer.from(text, 'utf16le').toString('base64')
+
       const psScript = [
         '$wshell = New-Object -ComObject WScript.Shell',
         `$text = [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${textBase64}'))`,
         "$safe = $text -replace '([+^%~{}()\\[\\]])', '{$1}'",
         '$wshell.SendKeys($safe)'
       ].join('; ')
+
       const encoded = Buffer.from(psScript, 'utf16le').toString('base64')
 
       await new Promise<void>((resolve, reject) => {
@@ -577,12 +582,14 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
           if (activeTypingProcess === child) {
             activeTypingProcess = null
           }
+
           if (error) {
             reject(error)
           } else {
             resolve()
           }
         })
+
         activeTypingProcess = child
       })
 
@@ -593,9 +600,11 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         timestamp: Date.now(),
         text: 'Completed requested Windows text entry'
       })
+
       return { success: true }
     } catch (err: any) {
       log(`[voice-bridge] CUA typeText failed: ${err}`)
+
       return { success: false, error: err.message }
     }
   })

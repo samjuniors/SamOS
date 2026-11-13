@@ -440,17 +440,21 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
       $cuaTargetApp.set(appName[0]?.toUpperCase() + appName.slice(1))
 
       const cuaApi = (window as any).hermesDesktop?.cua
+
       if (!cuaApi?.launchApp) {
         $cuaActive.set(false)
         decision.spokenReply = 'Windows computer-use is not connected. I did not launch the app.'
+
         break
       }
 
       $cuaActive.set(true)
       const result = await cuaApi.launchApp(app)
+
       if (!result?.success) {
         $cuaActive.set(false)
         decision.spokenReply = `I could not launch ${app}: ${result?.error || 'the launch was not approved'}.`
+
         break
       }
 
@@ -465,15 +469,21 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
         // Check cancellation after the app has time to take focus; do not
         // type into a different window after the user pressed ESC.
         await new Promise(resolve => setTimeout(resolve, 800))
+
         if (!$cuaActive.get()) {
           decision.spokenReply = `Opened ${app}, but cancelled typing.`
+
           break
         }
+
         const typing = await cuaApi.typeText(params.textToType)
+
         if (!typing?.success) {
           decision.spokenReply = `Opened ${app}, but text entry failed.`
+
           break
         }
+
         recordCuaActionStart({
           sessionId: 'cua_live',
           action: 'type',
@@ -488,16 +498,21 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
     case 'TYPE_TEXT': {
       setActiveWorkspaceTab('cua')
       const cuaApi = (window as any).hermesDesktop?.cua
+
       if (!params.text || !cuaApi?.typeText) {
         decision.spokenReply = 'Windows text entry is not connected. I did not type anything.'
+
         break
       }
 
       const result = await cuaApi.typeText(params.text)
+
       if (!result?.success) {
         decision.spokenReply = 'Windows text entry failed. I did not complete the requested typing.'
+
         break
       }
+
       recordCuaActionStart({
         sessionId: 'cua_live',
         action: 'type',
