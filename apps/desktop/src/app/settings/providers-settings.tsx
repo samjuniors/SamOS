@@ -398,6 +398,7 @@ export function ProvidersSettings({
   const scopeProfile = useStore($settingsRequestProfile)
   const { rowProps, vars } = useEnvCredentials(scopeProfile)
   const [oauthProviders, setOauthProviders] = useState<OAuthProvider[]>([])
+  const [oauthLoadError, setOauthLoadError] = useState(false)
   const [openProvider, setOpenProvider] = useState<null | string>(null)
   const [disconnecting, setDisconnecting] = useState<null | string>(null)
   // Free-text filter for the API-keys view (provider name / env-var key / desc).
@@ -434,9 +435,14 @@ export function ProvidersSettings({
   })
 
   const refreshOAuthProviders = useCallback(async () => {
-    // OAuth providers are best-effort — a failure here just hides the panel.
-    const { providers } = await listOAuthProviders(scopeProfile)
-    setOauthProviders(providers)
+    try {
+      const { providers } = await listOAuthProviders(scopeProfile)
+      setOauthProviders(providers)
+      setOauthLoadError(false)
+    } catch {
+      // A disconnected gateway is not the same as having no configured providers.
+      setOauthLoadError(true)
+    }
   }, [scopeProfile])
 
   useEffect(() => {
@@ -452,9 +458,12 @@ export function ProvidersSettings({
 
         if (!cancelled) {
           setOauthProviders(providers)
+          setOauthLoadError(false)
         }
       } catch {
-        // Ignore — the OAuth panel just won't render.
+        if (!cancelled) {
+          setOauthLoadError(true)
+        }
       }
     })()
 
@@ -543,6 +552,13 @@ export function ProvidersSettings({
 
   const keyGroups = buildProviderKeyGroups(vars)
 
+  const accountStatusWarning = oauthLoadError ? (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[6px] border border-(--ui-stroke-secondary) p-3" role="alert">
+      <p className="text-sm text-(--ui-text-secondary)">Could not load provider account status. Check the gateway connection, then retry.</p>
+      <Button onClick={() => void refreshOAuthProviders()} size="sm" type="button" variant="outline">Retry</Button>
+    </div>
+  ) : null
+
   if (showApiKeys) {
     const q = normalize(keyQuery)
 
@@ -557,6 +573,8 @@ export function ProvidersSettings({
     return (
       <SettingsContent>
         <SettingsProfileScope className="mb-5" />
+        {accountStatusWarning}
+        <p className="mb-3 text-xs text-(--ui-text-tertiary)">A saved API key means configured, not connection-tested. Choose a model and send a request to verify access.</p>
         <LocalEndpointRow onOpen={reason => startManualLocalEndpoint(reason, scopeProfile)} />
         {keyGroups.length > 0 ? (
           <div className="grid gap-3">
@@ -608,6 +626,7 @@ export function ProvidersSettings({
   return (
     <SettingsContent>
       <SettingsProfileScope className="mb-5" />
+      {accountStatusWarning}
       <OAuthPicker
         disconnecting={disconnecting}
         onDisconnect={provider => void handleDisconnect(provider)}
