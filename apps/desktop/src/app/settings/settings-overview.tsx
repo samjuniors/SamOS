@@ -44,7 +44,7 @@ function OverviewRows({
           action={
             <button
               aria-label={`Open ${item.label}`}
-              className="inline-flex min-h-8 items-center gap-1 rounded-control px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
+              className="inline-flex min-h-8 items-center gap-1 rounded-[6px] px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
               onClick={() => onOpen(item.view, item.page)}
               type="button"
             >
