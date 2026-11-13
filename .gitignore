@@ -339,3 +339,7 @@ infografico/
 /pm/.lock.json.lock
 
 apps/desktop/.dist-build*
+
+# SamOS: root-level diagnostic captures are runtime artifacts
+/gwlog_live_head_*.log
+/live_head.json

@@ -8,37 +8,102 @@ on:
       - 'agent/**'
       - 'tui_gateway/**'
       - 'scripts/ci/samos-prune-guard.mjs'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
       - 'pm/lock.json'
+      - 'pnpm-lock.yaml'
+      - 'gateway/**'
+      - 'scripts/build/**'
+      - 'scripts/bundles/**'
+      - 'docs/SAMOS_*.md'
       - '.github/workflows/samos-windows.yml'
+      - 'package.json'
+      - 'pnpm-*.yaml'
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: samos-windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  windows:
-    name: Windows Electron static build and tests
+  windows-electron:
+    name: Windows Electron build and unpacked package
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out SamOS
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
         with:
           persist-credentials: false
-      - name: Install pinned Node.js
-        uses: actions/setup-node@v4
+
+      - name: Set up pinned repo toolchain
+        uses: ./.github/actions/setup-pm
         with:
-          node-version-file: .nvmrc
-      - name: Install pinned pnpm
-        run: npm install --global pnpm@12.15.0
-      - name: Check source invariants
+          toolchain: all
+          extras: '[]'
+          test-environment: 'true'
+
+      - name: Guard retained runtime and product scope
+        shell: pwsh
         run: node scripts/ci/samos-prune-guard.mjs
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Desktop TypeScript checks
+
+      - name: Verify Electron-only payload staging contract
+        shell: pwsh
+        run: python -m pytest -q tests/scripts/test_samos_windows_bundle_profile.py
+
+      - name: Install locked JavaScript dependencies
+        shell: pwsh
+        run: just js-install
+
+      - name: Prepare locked Electron
+        shell: pwsh
+        run: just electron-runtime
+
+      - name: Typecheck desktop and Electron
+        shell: pwsh
         run: pnpm --dir apps/desktop run typecheck
-      - name: SamOS UI regression tests
-        run: pnpm --dir apps/desktop exec vitest run --project ui src/app/voice-ai-os/credential-storage.test.ts src/app/voice-ai-os/company-state.test.ts src/app/voice-ai-os/dynamic-model-routing.test.ts src/app/voice-ai-os/self-repair-startup.test.ts src/app/voice-ai-os/subagent-control.test.ts
-      - name: Renderer and Electron build
-        run: pnpm --dir apps/desktop run build
+
+      - name: Lint desktop and Electron
+        shell: pwsh
+        run: pnpm --dir apps/desktop run lint
+
+      - name: Run UI tests
+        shell: pwsh
+        run: pnpm --dir apps/desktop run test:ui
+
+      - name: Run Electron unit tests
+        shell: pwsh
+        run: pnpm --dir apps/desktop run test:desktop:platforms
+
+      - name: Build desktop
+        shell: pwsh
+        run: just desktop-build
+
+      - name: Package unsigned, unpacked Windows x64 build
+        working-directory: apps/desktop
+        shell: pwsh
+        run: pnpm run builder --dir --publish never --win --x64
+
+      - name: Record unpacked size and artifact location
+        shell: pwsh
+        run: |
+          $paths = @(Get-ChildItem -Path apps/desktop/release -Directory -Filter "*unpacked")
+          if ($paths.Count -eq 0) { throw "No unpacked Windows build found" }
+          $rows = foreach ($path in $paths) {
+            $size = (Get-ChildItem -LiteralPath $path.FullName -Recurse -File | Measure-Object Length -Sum).Sum
+            [pscustomobject]@{ directory = $path.Name; bytes = [int64]$size; mib = [math]::Round($size / 1MB, 1) }
+          }
+          $rows | ConvertTo-Json -Depth 4 | Set-Content -Path samos-windows-size.json
+          $rows | Format-Table | Out-String | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload size report only
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: samos-windows-size-${{ github.run_attempt }}
+          path: samos-windows-size.json
+          if-no-files-found: ignore
+          retention-days: 14
