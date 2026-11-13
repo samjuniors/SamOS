@@ -29,10 +29,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Lint remains a required, independent gate. A formatting failure must not
+  # prevent us from collecting Windows UI, runtime, and bundle evidence.
+  windows-lint:
+    name: Windows desktop lint
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out SamOS
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pinned repo toolchain
+        uses: ./.github/actions/setup-pm
+        with:
+          toolchain: all
+          extras: '[]'
+          test-environment: 'true'
+
+      - name: Install locked JavaScript dependencies
+        shell: pwsh
+        run: just js-install
+
+      - name: Lint desktop and Electron
+        shell: pwsh
+        run: pnpm --dir apps/desktop run lint
+
   windows-electron:
     name: Windows Electron build and unpacked package
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Check out SamOS
         uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
@@ -66,10 +93,6 @@ jobs:
         shell: pwsh
         run: pnpm --dir apps/desktop run typecheck
 
-      - name: Lint desktop and Electron
-        shell: pwsh
-        run: pnpm --dir apps/desktop run lint
-
       - name: Run UI tests
         shell: pwsh
         run: pnpm --dir apps/desktop run test:ui
@@ -78,23 +101,21 @@ jobs:
         shell: pwsh
         run: pnpm --dir apps/desktop run test:desktop:platforms
 
-      - name: Build desktop
-        shell: pwsh
-        run: just desktop-build
-
-      - name: Package unsigned, unpacked Windows x64 build
+      # Tests and typechecking use the checkout, not auto-fixed transient files.
+      # The SamOS package includes the Python Hermes agent, not just an empty UI shell.
+      - name: Stage lean agent and package unsigned unpacked Windows x64 build
         working-directory: apps/desktop
         shell: pwsh
-        run: pnpm run builder --dir --publish never --win --x64
+        run: pnpm run pack:samos:unpacked
 
-      - name: Record unpacked size and artifact location
+      - name: Record agent-inclusive unpacked size and artifact location
         shell: pwsh
         run: |
           $paths = @(Get-ChildItem -Path apps/desktop/release -Directory -Filter "*unpacked")
           if ($paths.Count -eq 0) { throw "No unpacked Windows build found" }
           $rows = foreach ($path in $paths) {
             $size = (Get-ChildItem -LiteralPath $path.FullName -Recurse -File | Measure-Object Length -Sum).Sum
-            [pscustomobject]@{ directory = $path.Name; bytes = [int64]$size; mib = [math]::Round($size / 1MB, 1) }
+            [pscustomobject]@{ profile = "samos-agent-inclusive-electron-only"; directory = $path.Name; bytes = [int64]$size; mib = [math]::Round($size / 1MB, 1) }
           }
           $rows | ConvertTo-Json -Depth 4 | Set-Content -Path samos-windows-size.json
           $rows | Format-Table | Out-String | Add-Content -Path $env:GITHUB_STEP_SUMMARY
