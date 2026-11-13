@@ -16,6 +16,14 @@ The prior run on commit `f1b74ac` passed pinned setup, source guard, payload tes
 
 The independent packaging gate was introduced in commit `8d45449` and is not counted as passed until its corresponding Windows job completes successfully.
 
+## Sofia computer-use bridge source hardening on PR #7
+
+- `cua-launch-policy.ts` permits only Calculator, Notepad, Explorer and Paint aliases. It rejects shell commands, arbitrary paths and launch arguments.
+- Electron app launching uses `spawn(..., {shell: false})`, waits for the OS `spawn` acknowledgement, and returns an explicit failure when launch is denied or unavailable.
+- The voice decision layer reads `launchApp` and `typeText` IPC results before claiming execution success. Delayed Notepad typing checks cancellation before proceeding.
+- Text entry passes base64-encoded data through PowerShell's `-EncodedCommand` using `execFile` (not string-interpolated shell execution), waits for process completion, and active typing can be cancelled by ESC or CUA abort.
+- Added unit regressions for app rejection and truthful voice-tool error reporting. Static and unit coverage are **not** evidence that live microphone input, user-consent prompts, active-window targeting, multi-step automation completion or Windows process-tree cancellation work.
+
 ## Not proven by this workflow
 
 - Sofia real microphone capture, voice-first boot, listening/TTS playback and barge-in
