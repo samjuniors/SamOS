@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { $aiEmployees, stopSubagent, upsertAIEmployee } from '@/store/subagent-telemetry'
 
 describe('Subagent control acknowledges real backend execution', () => {

@@ -1,8 +1,8 @@
 import { atom } from 'nanostores'
+
 import { $aiProviderConfig } from './ai-provider-config'
-import { $cuaActive, seedDemoCuaElementsIfEmpty } from './cua-state'
+import { seedDemoCuaElementsIfEmpty } from './cua-state'
 import {
-  $handsfreeActive,
   $micPermissionStatus,
   $voiceState,
   interruptVoice,
@@ -121,6 +121,7 @@ export async function runAutonomousSelfRepair(): Promise<{
   $systemHealth.set({ ...current, isScanning: true, overallStatus: 'SELF_HEALING' })
 
   const updatedChecks: SubsystemCheck[] = []
+
   const newLogs: SelfRepairLogEntry[] = [
     {
       id: `log_${Date.now()}_start`,
@@ -129,13 +130,16 @@ export async function runAutonomousSelfRepair(): Promise<{
       message: '⚡ Founder requested diagnostic scan. Initiating autonomous full-stack verification...'
     }
   ]
+
   let repairedCount = 0
 
   // ── 1. Audio Engine Diagnostic & Auto-Heal ─────────────────────────────────
   let audioStatus: SubsystemHealthStatus = 'healthy'
   let audioMsg = 'Microphone duplex stream active, dynamic ambient noise floor baseline calibrated.'
+
   try {
     const micPerm = $micPermissionStatus.get()
+
     if (micPerm === 'denied') {
       audioStatus = 'degraded'
       audioMsg = 'Microphone permission currently denied or blocked by system.'
@@ -167,6 +171,7 @@ export async function runAutonomousSelfRepair(): Promise<{
       message: `Audio pipeline anomaly intercepted and auto-healed.`
     })
   }
+
   updatedChecks.push({
     id: 'audio_pipeline',
     name: 'Voice Engine & Microphone VAD',
@@ -180,6 +185,7 @@ export async function runAutonomousSelfRepair(): Promise<{
   let aiStatus: SubsystemHealthStatus = 'healthy'
   let aiMsg = 'Cloud model connectivity verified; API key and TTS engine nominal.'
   const aiConfig = $aiProviderConfig.get()
+
   if (aiConfig.mode === 'cloud' && !aiConfig.cloudApiKey) {
     aiStatus = 'degraded'
     aiMsg = 'Cloud API key missing. Switched to offline contingency routing.'
@@ -210,6 +216,7 @@ export async function runAutonomousSelfRepair(): Promise<{
       })
     }
   }
+
   updatedChecks.push({
     id: 'ai_brain_quota',
     name: 'AI Brain Connectivity & Quota Gate',
@@ -223,6 +230,7 @@ export async function runAutonomousSelfRepair(): Promise<{
   let ipcStatus: SubsystemHealthStatus = 'healthy'
   let ipcMsg = 'Desktop CUA driver active: 9 typed IPC automation methods verified.'
   const cuaApi = (window as unknown as { hermesDesktop?: { cua?: Record<string, unknown> } }).hermesDesktop?.cua
+
   if (!cuaApi) {
     ipcStatus = 'degraded'
     ipcMsg = 'IPC desktop bridge is operating in browser simulation fallback mode.'
@@ -241,6 +249,7 @@ export async function runAutonomousSelfRepair(): Promise<{
       message: 'CUA desktop automation driver verified: launchApp, typeText, and popup operational.'
     })
   }
+
   updatedChecks.push({
     id: 'ipc_desktop_bridge',
     name: 'IPC Desktop CUA Driver',
@@ -254,6 +263,7 @@ export async function runAutonomousSelfRepair(): Promise<{
   let memStatus: SubsystemHealthStatus = 'healthy'
   let memMsg = 'Zero turn deadlocks; audio memory buffers purged.'
   const curVoiceState = $voiceState.get()
+
   // If voice state was hung in THINKING or SPEAKING with no active audio, self-repair to IDLE
   if (curVoiceState === 'THINKING' || curVoiceState === 'SPEAKING') {
     void interruptVoice()
@@ -275,6 +285,7 @@ export async function runAutonomousSelfRepair(): Promise<{
       message: 'Turn watchdog nominal: State machine responsive in standby.'
     })
   }
+
   updatedChecks.push({
     id: 'memory_watchdog',
     name: 'Memory & Turn Lock Watchdog',
@@ -322,6 +333,7 @@ export async function runAutonomousSelfRepair(): Promise<{
 
   // Formulate natural spoken feedback for the founder
   let narration = `Diagnostics complete. All systems are operating at ${healthScore} percent nominal health.`
+
   if (repairedCount > 0) {
     narration = `Founder diagnostics complete. Scanned audio, AI brain, IPC desktop bridge, and memory. Auto-repaired ${repairedCount} subsystem anomaly. System health is now ${healthScore} percent nominal and ready.`
   }

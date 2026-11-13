@@ -6,8 +6,10 @@ import { peerTargetKey } from './canonical-group-peers'
 
 const here = { name: 'alpha', connectionId: 'local' }
 const remote = peerRosterRow('mini', 'Mac Mini')
+
 const ready = (profile: string) => ({ ready: true as const, gateway: 'install:3f2a0000000000000000000000000000', installationId: 'install:3f2a0000000000000000000000000000',
   catalogDigest: PEER_MINI.room_link.catalog.catalog_digest, renewal: true, profile })
+
 const mini = (profile = 'default') => peerTargetKey({ connectionId: 'mini', targetProfile: profile })
 const targets = new Map([[mini(), ready('default')], [mini('coder'), ready('coder')]])
 

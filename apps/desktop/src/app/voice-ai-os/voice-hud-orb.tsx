@@ -1,7 +1,8 @@
+import './voice-ai-os.css'
+
 import { useStore } from '@nanostores/react'
 import {
   Activity,
-  Bot,
   ChevronDown,
   ChevronUp,
   Mic,
@@ -13,7 +14,7 @@ import {
   Volume2,
   X
 } from 'lucide-react'
-import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
+import { type KeyboardEvent, useMemo, useState } from 'react'
 
 import {
   $isVoiceMuted,
@@ -23,13 +24,11 @@ import {
   $voiceTranscript,
   interruptVoice,
   requestMicrophonePermission,
-  setVoiceState,
   toggleHandsfreeRecordingTurn,
   toggleMicrophoneMute
 } from '@/store/voice-state'
 
 import type { VoiceState } from './types'
-import './voice-ai-os.css'
 
 interface VoiceHudOrbProps {
   className?: string
@@ -112,17 +111,22 @@ export function VoiceHudOrb({
 
   // Audio waveform bars array
   const waveBarsCount = 14
+
   const barHeights = useMemo(() => {
     // Generate organic-looking waveform bars reacting to rmsLevel
     return Array.from({ length: waveBarsCount }).map((_, i) => {
-      if (voiceState === 'IDLE') return 16
+      if (voiceState === 'IDLE') {return 16}
+
       if (voiceState === 'THINKING') {
         const timeFactor = Math.sin((i / waveBarsCount) * Math.PI) * 20
+
         return 14 + timeFactor
       }
+
       // LISTENING or SPEAKING
       const harmonic = Math.sin((i / (waveBarsCount - 1)) * Math.PI)
       const dynamicBoost = rmsLevel * 56 * (0.4 + harmonic * 0.8)
+
       return Math.max(8, Math.min(64, Math.round(14 + dynamicBoost)))
     })
   }, [voiceState, rmsLevel])
@@ -130,6 +134,7 @@ export function VoiceHudOrb({
   // Handle click on the main orb (Tap-to-Talk / Barge-in)
   const handleOrbClick = () => {
     void requestMicrophonePermission()
+
     if (voiceState === 'SPEAKING' || voiceState === 'THINKING') {
       void interruptVoice()
     } else {
@@ -150,50 +155,50 @@ export function VoiceHudOrb({
 
   return (
     <div
+      aria-label="Voice AI OS HUD"
       className={`voice-hud-container flex flex-col items-center select-none ${className}`}
       role="region"
-      aria-label="Voice AI OS HUD"
     >
       {/* Central Floating Voice HUD Pill */}
       <div
-        data-state={voiceState}
+        aria-label={`Voice status: ${config.label}. Click to activate or stop.`}
         className={`voice-os-glass voice-orb-glow relative flex items-center justify-between gap-3.5 px-4 py-2.5 rounded-full transition-all duration-300 ${
           isFloating ? 'cursor-pointer hover:scale-[1.02]' : ''
         }`}
+        data-state={voiceState}
         onClick={handleOrbClick}
         onKeyDown={handleKeyDown}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        tabIndex={0}
         role="button"
-        aria-label={`Voice status: ${config.label}. Click to activate or stop.`}
+        tabIndex={0}
       >
         {/* State Icon with Pulsing Halo */}
         <div className="relative flex items-center justify-center size-9 rounded-full bg-white/5 border border-white/10 shrink-0">
           <StatusIcon className={`size-4.5 ${config.color} transition-colors duration-200`} />
           {voiceState === 'LISTENING' && (
             <span
-              className="absolute inset-0 rounded-full bg-cyan-400/20 animate-ping pointer-events-none"
               aria-hidden="true"
+              className="absolute inset-0 rounded-full bg-cyan-400/20 animate-ping pointer-events-none"
             />
           )}
           {voiceState === 'CUA_ACTIVE' && (
             <span
-              className="absolute inset-0 rounded-full bg-amber-400/20 animate-ping pointer-events-none"
               aria-hidden="true"
+              className="absolute inset-0 rounded-full bg-amber-400/20 animate-ping pointer-events-none"
             />
           )}
         </div>
 
         {/* Dynamic Equalizer / Waveform Display */}
         <div
-          className="flex items-center gap-[3px] h-7 px-1.5 min-w-[76px] justify-center"
           aria-hidden="true"
+          className="flex items-center gap-[3px] h-7 px-1.5 min-w-[76px] justify-center"
         >
           {barHeights.map((h, idx) => (
             <div
-              key={idx}
               className="waveform-bar w-[3.5px] rounded-full transition-all duration-75"
+              key={idx}
               style={{
                 height: `${h}px`,
                 backgroundColor:
@@ -250,33 +255,33 @@ export function VoiceHudOrb({
           >
             {/* Mic Mute Button */}
             <button
-              type="button"
+              aria-label={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
+              aria-pressed={isMuted}
+              className={`p-1.5 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors ${
+                isMuted ? 'text-red-400 bg-red-500/20' : ''
+              }`}
               onClick={e => {
                 e.stopPropagation()
                 toggleMicrophoneMute()
               }}
-              className={`p-1.5 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors ${
-                isMuted ? 'text-red-400 bg-red-500/20' : ''
-              }`}
               title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
-              aria-label={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
-              aria-pressed={isMuted}
+              type="button"
             >
               {isMuted ? <MicOff className="size-3.5" /> : <Mic className="size-3.5" />}
             </button>
 
             {/* Transcript Drawer Toggle */}
             <button
-              type="button"
+              aria-expanded={isExpanded}
+              aria-label={isExpanded ? 'Hide Transcript' : 'Show Live Transcript'}
+              className="p-1.5 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
               onClick={e => {
                 e.stopPropagation()
                 setIsExpanded(prev => !prev)
                 onExpandTranscript?.()
               }}
-              className="p-1.5 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
               title={isExpanded ? 'Hide Transcript' : 'Show Live Transcript'}
-              aria-label={isExpanded ? 'Hide Transcript' : 'Show Live Transcript'}
-              aria-expanded={isExpanded}
+              type="button"
             >
               {isExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
             </button>
@@ -284,14 +289,14 @@ export function VoiceHudOrb({
             {/* Barge-in Stop Button if active */}
             {voiceState !== 'IDLE' && (
               <button
-                type="button"
+                aria-label="Emergency Interrupt"
+                className="p-1.5 rounded-full hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
                 onClick={e => {
                   e.stopPropagation()
                   void interruptVoice()
                 }}
-                className="p-1.5 rounded-full hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
                 title="Emergency Interrupt (ESC)"
-                aria-label="Emergency Interrupt"
+                type="button"
               >
                 <Square className="size-3.5 fill-current" />
               </button>
@@ -303,9 +308,9 @@ export function VoiceHudOrb({
       {/* Live Streaming Speech Transcript Band */}
       {isExpanded && (
         <div
+          aria-label="Live Voice Transcript"
           className="voice-os-glass mt-2.5 w-full max-w-md p-3.5 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-200 text-left border border-white/10 shadow-2xl"
           role="region"
-          aria-label="Live Voice Transcript"
         >
           <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-2">
             <div className="flex items-center gap-1.5">
@@ -315,10 +320,10 @@ export function VoiceHudOrb({
               </span>
             </div>
             <button
-              type="button"
-              onClick={() => setIsExpanded(false)}
-              className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10"
               aria-label="Close Transcript Drawer"
+              className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-white/10"
+              onClick={() => setIsExpanded(false)}
+              type="button"
             >
               <X className="size-3" />
             </button>
@@ -354,8 +359,8 @@ export function VoiceHudOrb({
               </span>
               {recentTranscripts.slice(-3).map(item => (
                 <div
-                  key={item.id}
                   className="p-1.5 rounded bg-white/5 border border-white/5 text-slate-300 text-xs flex justify-between items-baseline"
+                  key={item.id}
                 >
                   <span className="truncate pr-2">"{item.text}"</span>
                   <span className="text-[10px] text-slate-400 font-mono shrink-0">

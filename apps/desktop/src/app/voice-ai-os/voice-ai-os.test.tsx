@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { $cuaActive, $cuaElements, abortCua } from '@/store/cua-state'
-import { $aiEmployees, pauseSubagent, resumeSubagent, seedDemoAIEmployeesIfEmpty } from '@/store/subagent-telemetry'
-import { $voiceRmsLevel, $voiceState, $voiceTranscript, setVoiceState, toggleMicrophoneMute } from '@/store/voice-state'
+import { $cuaActive } from '@/store/cua-state'
+import { seedDemoAIEmployeesIfEmpty } from '@/store/subagent-telemetry'
+import { $voiceRmsLevel, $voiceState, $voiceTranscript } from '@/store/voice-state'
 
 import { AIEmployeesGrid } from './ai-employees-grid'
 import { CuaActionOverlay } from './cua-action-overlay'

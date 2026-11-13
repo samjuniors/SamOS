@@ -165,31 +165,39 @@ const DEFAULT_TASKS: CompanyTask[] = []
 // -------------------------------------------------------------
 
 function loadFromStorage<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback
+  if (typeof window === 'undefined') {return fallback}
+
   try {
     const raw = localStorage.getItem(`hermes_company_${key}`)
+
     if (raw) {
       const parsed = JSON.parse(raw) as T
+
       if (key === 'profile' && parsed && typeof parsed === 'object') {
         // Migrate older profiles that kept the Paperclip credential in plain text.
         const safeProfile = { ...(parsed as unknown as CompanyProfile), paperclipApiKey: '' }
         localStorage.setItem(`hermes_company_${key}`, JSON.stringify(safeProfile))
+
         return safeProfile as unknown as T
       }
+
       return parsed
     }
   } catch {
     // Ignore storage parse issues
   }
+
   return fallback
 }
 
 function saveToStorage<T>(key: string, value: T): void {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined') {return}
+
   try {
     const persistable = key === 'profile'
       ? { ...(value as unknown as CompanyProfile), paperclipApiKey: '' }
       : value
+
     localStorage.setItem(`hermes_company_${key}`, JSON.stringify(persistable))
   } catch {
     // Ignore storage write issues
@@ -234,16 +242,19 @@ export function saveCompanyProfile(profile: Partial<CompanyProfile>): void {
 
 export function addCompanyAgent(agent: Omit<CompanyAgent, 'id' | 'tasksCompleted' | 'spentUsd'>): CompanyAgent {
   const id = `agent_${agent.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now().toString(36)}`
+
   const newAgent: CompanyAgent = {
     ...agent,
     id,
     tasksCompleted: 0,
     spentUsd: 0
   }
+
   const current = $companyAgents.get()
   $companyAgents.set([...current, newAgent])
 
   addHeartbeatLog(`Hired new agent: ${newAgent.name} (${newAgent.title}) into ${newAgent.department}.`)
+
   return newAgent
 }
 
@@ -257,6 +268,7 @@ export function createCompanyTask(
   allocatedModel?: string
 ): CompanyTask {
   const agent = $companyAgents.get().find(a => a.id === assigneeAgentId)
+
   const resolvedModel =
     allocatedModel ||
     (agent?.modelPreference && agent.modelPreference !== 'auto' ? agent.modelPreference : undefined) ||
@@ -285,13 +297,15 @@ export function createCompanyTask(
   $companyTasks.set([newTask, ...tasks])
 
   addHeartbeatLog(`New task queued: "${title}" assigned to ${getAgentName(assigneeAgentId)} via [${resolvedModel}].`)
+
   return newTask
 }
 
 export function updateTaskStatus(taskId: string, status: CompanyTask['status']): void {
   const tasks = $companyTasks.get()
   const idx = tasks.findIndex(t => t.id === taskId)
-  if (idx < 0) return
+
+  if (idx < 0) {return}
 
   const updated = [...tasks]
   updated[idx] = {
@@ -308,7 +322,8 @@ export function updateTaskStatus(taskId: string, status: CompanyTask['status']):
 export function approveCompanyTask(taskId: string, notes?: string): void {
   const tasks = $companyTasks.get()
   const task = tasks.find(t => t.id === taskId)
-  if (!task) return
+
+  if (!task) {return}
 
   updateTaskStatus(taskId, 'done')
 
@@ -321,6 +336,7 @@ export function approveCompanyTask(taskId: string, notes?: string): void {
 
   const agents = $companyAgents.get()
   const agentIdx = agents.findIndex(a => a.id === task.assigneeAgentId)
+
   if (agentIdx >= 0) {
     const updatedAgents = [...agents]
     updatedAgents[agentIdx] = {
@@ -334,6 +350,7 @@ export function approveCompanyTask(taskId: string, notes?: string): void {
   }
 
   addHeartbeatLog(`[APPROVAL GATE ACCEPTED] Founder approved "${task.title}". Moved to Done.`)
+
   if ($selectedTaskId.get() === taskId) {
     $selectedTaskId.set(null)
   }
@@ -345,7 +362,8 @@ export function approveCompanyTask(taskId: string, notes?: string): void {
 export function rejectCompanyTask(taskId: string, feedback: string): void {
   const tasks = $companyTasks.get()
   const idx = tasks.findIndex(t => t.id === taskId)
-  if (idx < 0) return
+
+  if (idx < 0) {return}
 
   const updated = [...tasks]
   updated[idx] = {
@@ -365,7 +383,7 @@ export function rejectCompanyTask(taskId: string, feedback: string): void {
  * never fabricate agent completion, expenditure, or external synchronization.
  */
 export async function runCompanyHeartbeat(): Promise<void> {
-  if ($isHeartbeatRunning.get()) return
+  if ($isHeartbeatRunning.get()) {return}
   $isHeartbeatRunning.set(true)
 
   try {
@@ -384,5 +402,6 @@ export function addHeartbeatLog(msg: string): void {
 
 export function getAgentName(agentId: string): string {
   const agent = $companyAgents.get().find(a => a.id === agentId)
+
   return agent ? agent.name : 'Unassigned Agent'
 }

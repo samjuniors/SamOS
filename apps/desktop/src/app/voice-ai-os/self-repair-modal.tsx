@@ -1,6 +1,5 @@
 import { useStore } from '@nanostores/react'
 import {
-  Activity,
   AlertTriangle,
   CheckCircle2,
   Cpu,
@@ -10,10 +9,8 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
-  Terminal,
   Wrench,
-  X,
-  Zap
+  X
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -30,10 +27,11 @@ export function SelfRepairModal() {
   const health = useStore($systemHealth)
   const [repairing, setRepairing] = useState(false)
 
-  if (!isOpen) return null
+  if (!isOpen) {return null}
 
   const handleManualRepair = async () => {
     setRepairing(true)
+
     try {
       const result = await runAutonomousSelfRepair()
       void speakResponse(result.narration)
@@ -46,12 +44,16 @@ export function SelfRepairModal() {
     switch (category) {
       case 'audio':
         return <Mic className="size-4 text-[#ff6a00]" />
+
       case 'ai_brain':
         return <Sparkles className="size-4 text-[#ff7f24]" />
+
       case 'ipc_bridge':
         return <Monitor className="size-4 text-[#ff6a00]" />
+
       case 'memory':
         return <Cpu className="size-4 text-[#ff944d]" />
+
       default:
         return <HardDrive className="size-4 text-[#9aa5b8]" />
     }
@@ -59,10 +61,10 @@ export function SelfRepairModal() {
 
   return (
     <div
+      aria-labelledby="self-repair-title"
+      aria-modal="true"
       className="fixed inset-0 z-[10050] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 select-none font-sans"
       role="dialog"
-      aria-modal="true"
-      aria-labelledby="self-repair-title"
     >
       {/* Modal Shell with Industrial 60-30-10 Palette (Matte Black 60%, Storm Grey 30%, Safety Orange 10%) */}
       <div className="relative w-full max-w-2xl bg-[#0c0e12] border border-[#333a49] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
@@ -73,7 +75,7 @@ export function SelfRepairModal() {
               <Wrench className="size-4 text-[#ff6a00] animate-pulse" />
             </div>
             <div>
-              <h2 id="self-repair-title" className="text-sm font-bold text-slate-100 flex items-center gap-2">
+              <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2" id="self-repair-title">
                 <span>Autonomous Self-Repair Engine</span>
                 <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-[#ff6a00]/20 text-[#ff7f24] border border-[#ff6a00]/40">
                   Founder Agentic AI
@@ -86,10 +88,10 @@ export function SelfRepairModal() {
           </div>
 
           <button
-            type="button"
-            onClick={closeSelfRepairModal}
-            className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#262c37] transition-colors cursor-pointer"
             aria-label="Close Self Repair Modal"
+            className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#262c37] transition-colors cursor-pointer"
+            onClick={closeSelfRepairModal}
+            type="button"
           >
             <X className="size-4" />
           </button>
@@ -118,10 +120,10 @@ export function SelfRepairModal() {
           </div>
 
           <button
-            type="button"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#ff6a00] hover:bg-[#ff7f24] disabled:opacity-50 text-black font-bold text-xs shadow-lg shadow-[#ff6a00]/25 transition-all cursor-pointer"
             disabled={repairing || health.isScanning}
             onClick={handleManualRepair}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#ff6a00] hover:bg-[#ff7f24] disabled:opacity-50 text-black font-bold text-xs shadow-lg shadow-[#ff6a00]/25 transition-all cursor-pointer"
+            type="button"
           >
             <RefreshCw className={`size-3.5 ${repairing || health.isScanning ? 'animate-spin' : ''}`} />
             <span>{repairing || health.isScanning ? 'Scanning & Healing...' : 'Run Self-Repair Now'}</span>
@@ -138,8 +140,8 @@ export function SelfRepairModal() {
             <div className="grid grid-cols-1 gap-2.5">
               {health.checks.map(check => (
                 <div
-                  key={check.id}
                   className="flex items-start justify-between p-3.5 rounded-xl bg-[#14171f] border border-[#262c37] hover:border-[#383f4d] transition-all"
+                  key={check.id}
                 >
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-[#1b202a] border border-[#2c3341] shrink-0 mt-0.5">
@@ -191,7 +193,7 @@ export function SelfRepairModal() {
 
             <div className="p-3.5 rounded-xl bg-[#090b0e] border border-[#262c37] font-mono text-xs space-y-2 max-h-48 overflow-y-auto">
               {health.logs.map(log => (
-                <div key={log.id} className="flex items-start gap-2 text-[11px] leading-relaxed">
+                <div className="flex items-start gap-2 text-[11px] leading-relaxed" key={log.id}>
                   <span className="text-[#9aa5b8] shrink-0">
                     [{new Date(log.timestamp).toLocaleTimeString()}]
                   </span>

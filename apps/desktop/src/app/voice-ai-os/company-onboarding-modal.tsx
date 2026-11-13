@@ -1,12 +1,10 @@
 import { useStore } from '@nanostores/react'
 import {
   ArrowRight,
-  Bot,
   Building,
   CheckCircle2,
   DollarSign,
   Rocket,
-  ShieldAlert,
   Sparkles,
   Users,
   X
@@ -34,7 +32,7 @@ export function CompanyOnboardingModal() {
   const [approvalThreshold, setApprovalThreshold] = useState(profile.approvalThresholdUsd.toString())
   const [firstGoal, setFirstGoal] = useState('Deploy autonomous agentic MVP and generate initial customer pipeline')
 
-  if (!isOpen) return null
+  if (!isOpen) {return null}
 
   const handleFinish = () => {
     saveCompanyProfile({
@@ -66,10 +64,10 @@ export function CompanyOnboardingModal() {
 
   return (
     <div
+      aria-label="Company Onboarding & Autonomous Setup"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
       role="dialog"
-      aria-modal="true"
-      aria-label="Company Onboarding & Autonomous Setup"
     >
       <div className="relative w-full max-w-2xl rounded-2xl bg-[#101318] border border-[#262c37] shadow-2xl shadow-black/90 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Top Header */}
@@ -91,9 +89,9 @@ export function CompanyOnboardingModal() {
             </div>
           </div>
           <button
-            type="button"
-            onClick={closeCompanyOnboarding}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#262c37] transition-colors"
+            onClick={closeCompanyOnboarding}
+            type="button"
           >
             <X className="size-4" />
           </button>
@@ -123,33 +121,33 @@ export function CompanyOnboardingModal() {
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Company / Project Name</label>
                   <input
-                    type="text"
-                    value={companyName}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#ff6a00]"
                     onChange={e => setCompanyName(e.target.value)}
                     placeholder="e.g. SamJuniors Autonomous OS"
-                    className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#ff6a00]"
+                    type="text"
+                    value={companyName}
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Industry / Domain</label>
                   <input
-                    type="text"
-                    value={industry}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#ff6a00]"
                     onChange={e => setIndustry(e.target.value)}
                     placeholder="e.g. Autonomous AI, Developer Tools, B2B SaaS"
-                    className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#ff6a00]"
+                    type="text"
+                    value={industry}
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Company Mission & Value Proposition</label>
                   <textarea
-                    rows={3}
-                    value={mission}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#ff6a00] resize-none"
                     onChange={e => setMission(e.target.value)}
                     placeholder="e.g. Build resilient software and high-agency agents that automate digital operations."
-                    className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#ff6a00] resize-none"
+                    rows={3}
+                    value={mission}
                   />
                 </div>
               </div>
@@ -240,10 +238,10 @@ export function CompanyOnboardingModal() {
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-xs text-slate-500">$</span>
                     <input
+                      className="w-full pl-7 pr-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white focus:outline-none focus:border-[#ff6a00]"
+                      onChange={e => setMonthlyBudget(e.target.value)}
                       type="number"
                       value={monthlyBudget}
-                      onChange={e => setMonthlyBudget(e.target.value)}
-                      className="w-full pl-7 pr-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white focus:outline-none focus:border-[#ff6a00]"
                     />
                   </div>
                   <span className="text-[11px] text-slate-500 mt-1 block">
@@ -258,10 +256,10 @@ export function CompanyOnboardingModal() {
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-xs text-slate-500">$</span>
                     <input
+                      className="w-full pl-7 pr-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white focus:outline-none focus:border-[#ff6a00]"
+                      onChange={e => setApprovalThreshold(e.target.value)}
                       type="number"
                       value={approvalThreshold}
-                      onChange={e => setApprovalThreshold(e.target.value)}
-                      className="w-full pl-7 pr-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white focus:outline-none focus:border-[#ff6a00]"
                     />
                   </div>
                   <span className="text-[11px] text-slate-500 mt-1 block">
@@ -286,11 +284,11 @@ export function CompanyOnboardingModal() {
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Primary Launch Goal</label>
                   <textarea
-                    rows={3}
-                    value={firstGoal}
+                    className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#ff6a00] resize-none"
                     onChange={e => setFirstGoal(e.target.value)}
                     placeholder="e.g. Conduct market analysis and build prototype for autonomous voice agent"
-                    className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#ff6a00] resize-none"
+                    rows={3}
+                    value={firstGoal}
                   />
                 </div>
 
@@ -309,9 +307,9 @@ export function CompanyOnboardingModal() {
         <div className="flex items-center justify-between px-6 py-4 border-t border-[#262c37] bg-[#0c0e12]">
           {step > 1 ? (
             <button
-              type="button"
-              onClick={() => setStep((step - 1) as 1 | 2 | 3)}
               className="px-4 py-2 rounded-xl bg-[#1b202a] hover:bg-[#262c37] text-xs font-medium text-slate-300 transition-colors cursor-pointer"
+              onClick={() => setStep((step - 1) as 1 | 2 | 3)}
+              type="button"
             >
               Back
             </button>
@@ -321,18 +319,18 @@ export function CompanyOnboardingModal() {
 
           {step < 4 ? (
             <button
-              type="button"
-              onClick={() => setStep((step + 1) as 2 | 3 | 4)}
               className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#ff6a00] hover:bg-[#ff7f24] text-xs font-semibold text-black transition-colors cursor-pointer shadow-md shadow-[#ff6a00]/25"
+              onClick={() => setStep((step + 1) as 2 | 3 | 4)}
+              type="button"
             >
               <span>Next Step</span>
               <ArrowRight className="size-3.5" />
             </button>
           ) : (
             <button
-              type="button"
-              onClick={handleFinish}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#ff6a00] to-[#ff944d] hover:brightness-110 text-xs font-bold text-black transition-all cursor-pointer shadow-lg shadow-[#ff6a00]/30"
+              onClick={handleFinish}
+              type="button"
             >
               <Sparkles className="size-3.5" />
               <span>Launch Autonomous Company</span>

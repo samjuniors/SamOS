@@ -133,6 +133,7 @@ describe('Paperclip-Inspired Company & Multi-Agent Org State', () => {
       'UI/UX',
       20
     )
+
     updateTaskStatus(task.id, 'in_review')
     task.spentUsd = 15.50
     $companyTasks.set([task])
@@ -158,6 +159,7 @@ describe('Paperclip-Inspired Company & Multi-Agent Org State', () => {
       'agent_atlas_cto',
       'high'
     )
+
     updateTaskStatus(task.id, 'in_review')
     $companyTasks.set([task])
 

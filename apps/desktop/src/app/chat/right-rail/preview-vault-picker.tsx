@@ -201,6 +201,7 @@ export function PreviewVaultButton({ tabId, url }: PreviewVaultButtonProps) {
     const requestOwner = vaultOwnerKey(owner)
     const requestOrigin = origin
     const token = (loadToken.current += 1)
+
     // True when the owner this request was keyed to, and the page origin, are
     // still current — otherwise this reply belongs to a superseded request.
     const current = () =>

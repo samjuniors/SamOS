@@ -8,24 +8,24 @@
  * - Speaks naturally via Gemini Aoede companion voice (no rigid robot scripts).
  */
 
+import { navigateToUrl } from '@/app/voice-ai-os/browser-workspace'
+
+import { $aiProviderConfig, selectDynamicModelForTask } from './ai-provider-config'
 import {
   $companyAgents,
   $companyProfile,
   $companyTasks,
   addCompanyAgent,
   approveCompanyTask,
+  type CompanyAgent,
   createCompanyTask,
   openCompanyOnboarding,
   rejectCompanyTask,
-  runCompanyHeartbeat,
-  type CompanyAgent
+  runCompanyHeartbeat
 } from './company-state'
-import { $aiProviderConfig, selectDynamicModelForTask } from './ai-provider-config'
-import { openSelfRepairModal, runAutonomousSelfRepair } from './self-repair-engine'
-import { navigateToUrl } from '@/app/voice-ai-os/browser-workspace'
-import { setActiveWorkspaceTab } from './workspace-tab-state'
 import { $cuaActive, $cuaTargetApp, recordCuaActionStart } from './cua-state'
-import { upsertAIEmployee } from './subagent-telemetry'
+import { openSelfRepairModal, runAutonomousSelfRepair } from './self-repair-engine'
+import { setActiveWorkspaceTab } from './workspace-tab-state'
 
 export interface AgentDecisionResult {
   thought: string
@@ -39,7 +39,8 @@ export interface AgentDecisionResult {
  */
 export async function decideAndExecuteAgentAction(userInput: string): Promise<string> {
   const query = userInput.trim()
-  if (!query) return ''
+
+  if (!query) {return ''}
 
   // 1. Gather live operational context
   const company = $companyProfile.get()
@@ -105,7 +106,8 @@ async function queryGeminiDecision(
 ): Promise<AgentDecisionResult | null> {
   const cfg = $aiProviderConfig.get()
   const apiKey = cfg.cloudApiKey
-  if (!apiKey) return null
+
+  if (!apiKey) {return null}
 
   const candidateModels = [
     'gemini-3.1-flash-lite',
@@ -169,8 +171,10 @@ Respond STRICTLY in JSON format:
       if (res.ok) {
         const data = await res.json()
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+
         if (text) {
           const parsed = JSON.parse(text) as AgentDecisionResult
+
           if (parsed.action && parsed.spokenReply) {
             return parsed
           }
@@ -202,10 +206,13 @@ function evaluateSemanticHeuristics(
   // 1. YouTube & Web Queries
   if (lower.includes('youtube') || lower.includes('video') || lower.includes('watch')) {
     const topic = query.replace(/(?:search|find|look up|show me|open|watch|on)?\s*youtube(?:\s*for)?/i, '').trim()
+
     const url = topic
       ? `https://www.youtube.com/results?search_query=${encodeURIComponent(topic)}`
       : 'https://www.youtube.com'
+
     const isPopup = lower.includes('popup') || lower.includes('window')
+
     return {
       thought: `User wants to view YouTube content regarding: ${topic || 'homepage'}`,
       action: 'NAVIGATE_BROWSER',
@@ -224,11 +231,13 @@ function evaluateSemanticHeuristics(
     /\.(com|org|io|dev|net)/i.test(query)
   ) {
     let url = 'https://www.google.com'
+
     if (lower.includes('github')) {
       const ghTopic = query.replace(/.*github(?:\s*for)?/i, '').trim()
       url = ghTopic ? `https://github.com/search?q=${encodeURIComponent(ghTopic)}` : 'https://github.com'
     } else {
       const match = query.match(/https?:\/\/[^\s]+|[a-zA-Z0-9-]+\.(com|org|io|dev|ai|net)[^\s]*/i)
+
       if (match) {
         url = match[0].startsWith('http') ? match[0] : `https://${match[0]}`
       } else {
@@ -236,6 +245,7 @@ function evaluateSemanticHeuristics(
         url = `https://www.google.com/search?q=${encodeURIComponent(term || query)}`
       }
     }
+
     return {
       thought: `Web browsing request for ${url}`,
       action: 'NAVIGATE_BROWSER',
@@ -248,6 +258,7 @@ function evaluateSemanticHeuristics(
   if (lower.includes('note') || lower.includes('write down') || lower.includes('notepad') || lower.includes('jot down')) {
     const textMatch = query.match(/(?:write down|note|type|jot down|notepad)(?:\s*:|\s+that|\s+to|\s+)?\s*(.+)/i)
     const textToType = textMatch ? textMatch[1].trim() : ''
+
     return {
       thought: 'User wants to take notes or open Notepad',
       action: 'LAUNCH_APP',
@@ -307,6 +318,7 @@ function evaluateSemanticHeuristics(
   // 4. Company Governance, Approval & Review
   if (lower.includes('approve') || lower.includes('sign off') || lower.includes('accept') || lower.includes('merge')) {
     const targetTask = ctx.inReviewTasks[0]
+
     return {
       thought: `Approving pending deliverable ${targetTask ? targetTask.id : 'none'}`,
       action: 'APPROVE_TASK',
@@ -319,6 +331,7 @@ function evaluateSemanticHeuristics(
 
   if (lower.includes('reject') || lower.includes('send back') || lower.includes('needs changes')) {
     const targetTask = ctx.inReviewTasks[0]
+
     return {
       thought: 'Rejecting deliverable with steering feedback',
       action: 'REJECT_TASK',
@@ -331,8 +344,10 @@ function evaluateSemanticHeuristics(
 
   // 5. Team Status or Agent Status
   const matchedAgent = ctx.agents.find(a => lower.includes(a.name.toLowerCase()))
+
   if (matchedAgent) {
     const activeTask = ctx.tasks.find(t => t.id === matchedAgent.currentTaskId)
+
     return {
       thought: `Status inquiry for agent ${matchedAgent.name}`,
       action: 'COMPANY_STATUS',
@@ -363,6 +378,7 @@ function evaluateSemanticHeuristics(
   // 6. Hiring & Onboarding
   if (lower.includes('hire') || lower.includes('recruit') || lower.includes('bring on')) {
     const roleMatch = query.replace(/.*(?:hire|recruit|bring on)\s+(?:a|an)?/i, '').trim()
+
     return {
       thought: `User wants to hire: ${roleMatch}`,
       action: 'HIRE_AGENT',
@@ -413,6 +429,7 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
     case 'NAVIGATE_BROWSER': {
       setActiveWorkspaceTab('browser')
       navigateToUrl(params.url || 'https://www.google.com', !!params.popup)
+
       break
     }
 
@@ -424,6 +441,7 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
       $cuaTargetApp.set(appName[0].toUpperCase() + appName.slice(1))
 
       const cuaApi = (window as any).hermesDesktop?.cua
+
       if (cuaApi?.launchApp) {
         await cuaApi.launchApp(app)
         recordCuaActionStart({
@@ -445,12 +463,14 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
           }, 800)
         }
       }
+
       break
     }
 
     case 'TYPE_TEXT': {
       setActiveWorkspaceTab('cua')
       const cuaApi = (window as any).hermesDesktop?.cua
+
       if (params.text && cuaApi?.typeText) {
         await cuaApi.typeText(params.text)
         recordCuaActionStart({
@@ -460,6 +480,7 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
           text: `Typed "${params.text}"`
         })
       }
+
       break
     }
 
@@ -467,48 +488,59 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
       openSelfRepairModal()
       const rep = await runAutonomousSelfRepair()
       decision.spokenReply = rep.narration
+
       break
     }
 
     case 'APPROVE_TASK': {
       setActiveWorkspaceTab('company')
+
       if (params.taskId) {
         approveCompanyTask(params.taskId)
       } else {
         const inReview = $companyTasks.get().find(t => t.status === 'in_review')
-        if (inReview) approveCompanyTask(inReview.id)
+
+        if (inReview) {approveCompanyTask(inReview.id)}
       }
+
       break
     }
 
     case 'REJECT_TASK': {
       setActiveWorkspaceTab('company')
+
       if (params.taskId) {
         rejectCompanyTask(params.taskId, params.feedback || 'Revision needed.')
       } else {
         const inReview = $companyTasks.get().find(t => t.status === 'in_review')
-        if (inReview) rejectCompanyTask(inReview.id, params.feedback || 'Revision needed.')
+
+        if (inReview) {rejectCompanyTask(inReview.id, params.feedback || 'Revision needed.')}
       }
+
       break
     }
 
     case 'COMPANY_STATUS':
     case 'COMPANY_HEARTBEAT': {
       setActiveWorkspaceTab('company')
+
       if (action === 'COMPANY_HEARTBEAT') {
         await runCompanyHeartbeat()
       }
+
       break
     }
 
     case 'COMPANY_ONBOARDING': {
       setActiveWorkspaceTab('company')
       openCompanyOnboarding()
+
       break
     }
 
     case 'HIRE_AGENT': {
       setActiveWorkspaceTab('company')
+
       if (params.name && params.role) {
         addCompanyAgent({
           name: params.name,
@@ -522,11 +554,13 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
           soulSnippet: params.soul || 'Autonomous domain specialist executing tasks.'
         })
       }
+
       break
     }
 
     case 'CREATE_TASK': {
       setActiveWorkspaceTab('company')
+
       if (params.title) {
         const priority = params.priority || 'medium'
         const dynamicModel = selectDynamicModelForTask({ priority, taskType: 'subagent' })
@@ -540,10 +574,12 @@ async function executeDecidedAction(decision: AgentDecisionResult): Promise<void
           dynamicModel.model
         )
       }
+
       break
     }
 
     case 'CONVERSATION':
+
     default:
       // Pure conversation or handled elsewhere
       break

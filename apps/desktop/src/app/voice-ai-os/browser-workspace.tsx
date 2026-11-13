@@ -6,7 +6,6 @@ import {
   Globe,
   Home,
   Maximize2,
-  Minimize2,
   Plus,
   RefreshCw,
   Search,
@@ -36,7 +35,8 @@ export const $activeTabId = atom<string>('tab_youtube')
 /** Navigate active browser tab to a URL or search query */
 export function navigateToUrl(rawInput: string, openPopup = false): void {
   let url = rawInput.trim()
-  if (!url) return
+
+  if (!url) {return}
 
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     if (url.includes('.') && !url.includes(' ')) {
@@ -56,6 +56,7 @@ export function navigateToUrl(rawInput: string, openPopup = false): void {
 
   if (openPopup) {
     const cuaApi = (window as unknown as { hermesDesktop?: { cua?: { openBrowserPopup?: (u: string) => Promise<unknown> } } }).hermesDesktop?.cua
+
     if (cuaApi?.openBrowserPopup) {
       void cuaApi.openBrowserPopup(url)
     } else {
@@ -67,6 +68,7 @@ export function navigateToUrl(rawInput: string, openPopup = false): void {
 function extractDomain(urlStr: string): string {
   try {
     const u = new URL(urlStr)
+
     return u.hostname.replace(/^www\./, '')
   } catch {
     return 'Web'
@@ -119,6 +121,7 @@ export function BrowserWorkspace() {
 
   const handleOpenPopup = () => {
     const cuaApi = (window as unknown as { hermesDesktop?: { cua?: { openBrowserPopup?: (u: string) => Promise<unknown> } } }).hermesDesktop?.cua
+
     if (cuaApi?.openBrowserPopup) {
       void cuaApi.openBrowserPopup(currentUrl)
     } else {
@@ -128,6 +131,7 @@ export function BrowserWorkspace() {
 
   const handleOpenSystem = () => {
     const cuaApi = (window as unknown as { hermesDesktop?: { cua?: { openSystemUrl?: (u: string) => Promise<unknown> } } }).hermesDesktop?.cua
+
     if (cuaApi?.openSystemUrl) {
       void cuaApi.openSystemUrl(currentUrl)
     } else {
@@ -148,34 +152,36 @@ export function BrowserWorkspace() {
       <div className="flex items-center px-3 pt-2 bg-[#101318] border-b border-[#262c37] gap-1.5 shrink-0 overflow-x-auto">
         {tabs.map(tab => {
           const isActive = tab.id === activeTabId
+
           return (
             <div
-              key={tab.id}
-              onClick={() => {
-                $activeTabId.set(tab.id)
-                $browserCurrentUrl.set(tab.url)
-              }}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-t-xl text-xs font-medium cursor-pointer transition-colors max-w-[200px] border-t border-x ${
                 isActive
                   ? 'bg-[#1b202a] border-[#383f4d] text-white shadow-sm border-t-[#ff6a00]'
                   : 'bg-[#101318] border-transparent text-[#9aa5b8] hover:text-slate-200 hover:bg-[#161a22]'
               }`}
+              key={tab.id}
+              onClick={() => {
+                $activeTabId.set(tab.id)
+                $browserCurrentUrl.set(tab.url)
+              }}
             >
               <Globe className="size-3.5 shrink-0 text-[#ff6a00]" />
               <span className="truncate">{tab.title}</span>
               {tabs.length > 1 && (
                 <button
-                  type="button"
+                  className="p-0.5 rounded hover:bg-[#262c37] text-[#9aa5b8] hover:text-white"
                   onClick={e => {
                     e.stopPropagation()
                     const next = tabs.filter(t => t.id !== tab.id)
                     $browserTabs.set(next)
+
                     if (tab.id === activeTabId && next[0]) {
                       $activeTabId.set(next[0].id)
                       $browserCurrentUrl.set(next[0].url)
                     }
                   }}
-                  className="p-0.5 rounded hover:bg-[#262c37] text-[#9aa5b8] hover:text-white"
+                  type="button"
                 >
                   <X className="size-3" />
                 </button>
@@ -186,19 +192,20 @@ export function BrowserWorkspace() {
 
         {/* New Tab Button */}
         <button
-          type="button"
+          className="p-1 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors ml-1 cursor-pointer"
           onClick={() => {
             const newTab: BrowserTab = {
               id: `tab_${Date.now()}`,
               title: 'New Tab',
               url: 'https://www.google.com'
             }
+
             $browserTabs.set([...tabs, newTab])
             $activeTabId.set(newTab.id)
             $browserCurrentUrl.set(newTab.url)
           }}
-          className="p-1 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors ml-1 cursor-pointer"
           title="Open New Tab"
+          type="button"
         >
           <Plus className="size-4" />
         </button>
@@ -208,38 +215,38 @@ export function BrowserWorkspace() {
       <div className="flex items-center gap-2 px-3 py-2 bg-[#14171f] border-b border-[#262c37] shrink-0">
         <div className="flex items-center gap-1">
           <button
-            type="button"
-            onClick={handleBack}
-            disabled={historyIndex <= 0}
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+            disabled={historyIndex <= 0}
+            onClick={handleBack}
             title="Back"
+            type="button"
           >
             <ArrowLeft className="size-4" />
           </button>
           <button
-            type="button"
-            onClick={handleForward}
-            disabled={historyIndex >= history.length - 1}
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+            disabled={historyIndex >= history.length - 1}
+            onClick={handleForward}
             title="Forward"
+            type="button"
           >
             <ArrowRight className="size-4" />
           </button>
           <button
-            type="button"
-            onClick={handleReload}
             className={`p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors cursor-pointer ${
               isLoading ? 'animate-spin text-[#ff6a00]' : ''
             }`}
+            onClick={handleReload}
             title="Reload page"
+            type="button"
           >
             <RefreshCw className="size-4" />
           </button>
           <button
-            type="button"
-            onClick={() => handleNavigate('https://www.google.com')}
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors cursor-pointer"
+            onClick={() => handleNavigate('https://www.google.com')}
             title="Home"
+            type="button"
           >
             <Home className="size-4" />
           </button>
@@ -249,8 +256,7 @@ export function BrowserWorkspace() {
         <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#090b0e] border border-[#262c37] focus-within:border-[#ff6a00] transition-colors">
           <Shield className="size-3.5 text-[#ff6a00] shrink-0" />
           <input
-            type="text"
-            value={inputUrl}
+            className="flex-1 bg-transparent border-none text-xs text-slate-100 placeholder:text-[#9aa5b8]/50 focus:outline-none font-mono"
             onChange={e => setInputUrl(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter') {
@@ -258,7 +264,8 @@ export function BrowserWorkspace() {
               }
             }}
             placeholder="Enter web address or search query..."
-            className="flex-1 bg-transparent border-none text-xs text-slate-100 placeholder:text-[#9aa5b8]/50 focus:outline-none font-mono"
+            type="text"
+            value={inputUrl}
           />
         </div>
 
@@ -266,13 +273,14 @@ export function BrowserWorkspace() {
         <div className="hidden lg:flex items-center gap-1 border-l border-[#262c37] pl-2">
           {QUICK_LINKS.map(item => {
             const Icon = item.icon
+
             return (
               <button
-                key={item.name}
-                type="button"
-                onClick={() => handleNavigate(item.url)}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[#1b202a] transition-colors cursor-pointer ${item.color}`}
+                key={item.name}
+                onClick={() => handleNavigate(item.url)}
                 title={`Open ${item.name}`}
+                type="button"
               >
                 <Icon className="size-3.5" />
                 <span>{item.name}</span>
@@ -284,19 +292,19 @@ export function BrowserWorkspace() {
         {/* Window & Popup Controls */}
         <div className="flex items-center gap-1 border-l border-[#262c37] pl-2">
           <button
-            type="button"
-            onClick={handleOpenPopup}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#ff6a00]/15 text-[#ff7f24] hover:bg-[#ff6a00]/25 border border-[#ff6a00]/40 transition-colors shadow-sm shadow-[#ff6a00]/15 cursor-pointer"
+            onClick={handleOpenPopup}
             title="Pop out into a dedicated floating window"
+            type="button"
           >
             <Maximize2 className="size-3.5" />
             <span>Dedicated Popup</span>
           </button>
           <button
-            type="button"
-            onClick={handleOpenSystem}
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors cursor-pointer"
+            onClick={handleOpenSystem}
             title="Open in System Browser"
+            type="button"
           >
             <ExternalLink className="size-4" />
           </button>
@@ -306,13 +314,13 @@ export function BrowserWorkspace() {
       {/* Main Browser Viewport */}
       <div className="flex-1 relative bg-[#090b0e] flex flex-col items-center justify-center overflow-hidden">
         <iframe
-          key={iframeKey}
-          ref={iframeRef}
-          src={currentUrl}
-          onLoad={() => setIsLoading(false)}
-          className="w-full h-full border-none bg-white/95"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          className="w-full h-full border-none bg-white/95"
+          key={iframeKey}
+          onLoad={() => setIsLoading(false)}
+          ref={iframeRef}
           sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
+          src={currentUrl}
           title="Hermes Workspace Browser Viewport"
         />
 
@@ -321,9 +329,9 @@ export function BrowserWorkspace() {
           <span>Live Webpage Viewport</span>
           <span className="text-[#333a49]">|</span>
           <button
-            type="button"
-            onClick={handleOpenPopup}
             className="text-[#ff7f24] hover:text-[#ff6a00] hover:underline flex items-center gap-1 font-medium cursor-pointer"
+            onClick={handleOpenPopup}
+            type="button"
           >
             <span>Open in Popup Window</span>
             <ExternalLink className="size-3" />

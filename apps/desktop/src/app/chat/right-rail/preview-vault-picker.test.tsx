@@ -13,8 +13,11 @@ import { PreviewVaultButton, resolveTabVaultOwner, vaultOwnerKey } from './previ
 // Radix menus need these jsdom polyfills to open.
 beforeEach(() => {
   Element.prototype.hasPointerCapture ??= () => false
+
   Element.prototype.setPointerCapture ??= () => {}
+
   Element.prototype.releasePointerCapture ??= () => {}
+
   Element.prototype.scrollIntoView ??= () => {}
 })
 

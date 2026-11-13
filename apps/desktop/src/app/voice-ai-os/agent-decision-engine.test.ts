@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { decideAndExecuteAgentAction } from '@/store/agent-decision-engine'
 import {
   $companyAgents,
   $companyProfile,
@@ -7,9 +8,9 @@ import {
   createCompanyTask,
   updateTaskStatus
 } from '@/store/company-state'
-import { decideAndExecuteAgentAction } from '@/store/agent-decision-engine'
-import { $browserCurrentUrl } from './browser-workspace'
 import { $activeWorkspaceTab } from '@/store/workspace-tab-state'
+
+import { $browserCurrentUrl } from './browser-workspace'
 
 describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, () => {
   beforeEach(() => {
@@ -119,6 +120,7 @@ describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, ()
 
     expect(reply.length).toBeGreaterThan(10)
     const agents = $companyAgents.get()
+
     const seoAgent = agents.find(
       a =>
         a.role.toLowerCase().includes('seo') ||
@@ -126,6 +128,7 @@ describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, ()
         a.role.toLowerCase().includes('marketing') ||
         a.name.toLowerCase().includes('apollo')
     )
+
     expect(seoAgent).toBeDefined()
   })
 

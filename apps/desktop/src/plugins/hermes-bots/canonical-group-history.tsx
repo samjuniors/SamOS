@@ -70,6 +70,7 @@ function eventTimeMs(timestamp?: number) {
 function EventBody({ event, labels, notice }: { event: CanonicalGroupEvent; labels: GroupReasonMessages & { turnNoAnswer: string }; notice?: string }) {
   if (notice) {
     const reason = event.payload.error || event.payload.reason || event.payload.reason_code
+
     const detail = reason === 'member_unavailable' ? labels.turnNoAnswer : groupReasonText(event.payload.error, labels) ||
       groupReasonText(event.payload.reason, labels) || groupReasonText(event.payload.reason_code, labels)
 

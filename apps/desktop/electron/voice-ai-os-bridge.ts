@@ -11,22 +11,30 @@
 
 import fs from 'fs'
 import path from 'path'
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, type NativeImage, Tray } from 'electron'
+
+import type { app, BrowserWindow, globalShortcut, ipcMain} from 'electron';
+import { Menu, nativeImage, type NativeImage, Tray } from 'electron'
 
 export function parseEnvFile(content: string): Record<string, string> {
   const result: Record<string, string> = {}
+
   for (const line of content.split(/\r?\n/)) {
     const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
+
+    if (!trimmed || trimmed.startsWith('#')) {continue}
     const eqIdx = trimmed.indexOf('=')
-    if (eqIdx === -1) continue
+
+    if (eqIdx === -1) {continue}
     const key = trimmed.slice(0, eqIdx).trim()
     let val = trimmed.slice(eqIdx + 1).trim()
+
     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
       val = val.slice(1, -1)
     }
+
     result[key] = val
   }
+
   return result
 }
 
@@ -38,7 +46,9 @@ export function readEnvConfig(): Record<string, string> {
     path.resolve(process.cwd(), '../../.env'),
     path.resolve(process.env.USERPROFILE || '', '.hermes/.env')
   ]
+
   const config: Record<string, string> = {}
+
   for (const candidate of candidates) {
     try {
       if (fs.existsSync(candidate)) {
@@ -47,6 +57,7 @@ export function readEnvConfig(): Record<string, string> {
       }
     } catch {}
   }
+
   return config
 }
 
@@ -145,6 +156,7 @@ export function createVoiceStateTrayIcon(state: VoiceState, isDark = true): Nati
   </svg>`
 
   const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
+
   return nativeImage.createFromDataURL(dataUrl)
 }
 
@@ -158,6 +170,7 @@ function queryStartupStatus(appApi: typeof app): StartupStatus {
       path: process.execPath,
       args: ['--boot-startup']
     })
+
     return {
       enabled: settings.openAtLogin,
       openAsHidden: Boolean((settings as unknown as Record<string, unknown>).openAsHidden),
@@ -179,13 +192,16 @@ function updateStartupStatus(appApi: typeof app, enable: boolean): StartupStatus
       path: process.execPath,
       args: ['--boot-startup']
     }
+
     if (process.platform === 'darwin') {
       opts.openAsHidden = true
     }
+
     appApi.setLoginItemSettings(opts as Parameters<typeof appApi.setLoginItemSettings>[0])
   } catch {
     // best-effort login item write
   }
+
   return queryStartupStatus(appApi)
 }
 
@@ -229,6 +245,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         escapeShortcutActive = deps.globalShortcut.register('Escape', () => {
           void handleInterrupt()
         })
+
         if (escapeShortcutActive) {
           log('[voice-bridge] Registered Escape emergency stop shortcut')
         }
@@ -242,6 +259,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
       } catch {
         // ignore
       }
+
       escapeShortcutActive = false
       log('[voice-bridge] Unregistered Escape emergency stop shortcut')
     }
@@ -249,6 +267,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
 
   const toggleHudSummon = () => {
     const hud = deps.getHudWindow()
+
     if (hud && !hud.isDestroyed() && hud.isVisible()) {
       deps.closeHudWindow()
       setWindowMode('canvas')
@@ -267,9 +286,11 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
       try {
         if (!deps.globalShortcut.isRegistered(chord)) {
           const registered = deps.globalShortcut.register(chord, toggleHudSummon)
+
           if (registered) {
             summonShortcutRegistered = chord
             log(`[voice-bridge] Registered HUD summon shortcut on ${chord}`)
+
             return
           }
         }
@@ -277,6 +298,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         log(`[voice-bridge] Failed attempting chord ${chord}: ${err}`)
       }
     }
+
     log('[voice-bridge] Warning: Could not bind global HUD summon shortcut')
   }
 
@@ -287,6 +309,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     }
 
     const stateLabel = VOICE_STATE_COLORS[currentVoiceState]?.label ?? 'Idle'
+
     const contextMenu = Menu.buildFromTemplate([
       { label: `Hermes Voice: ${stateLabel}`, enabled: false },
       { type: 'separator' },
@@ -320,6 +343,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         click: () => {
           deps.restoreMainWindow()
           const mainWin = deps.getMainWindow()
+
           if (mainWin && !mainWin.isDestroyed()) {
             mainWin.webContents.send('hermes:navigate:settings')
           }
@@ -330,6 +354,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         click: () => {
           deps.restoreMainWindow()
           const mainWin = deps.getMainWindow()
+
           if (mainWin && !mainWin.isDestroyed()) {
             mainWin.webContents.send('hermes:open-updates')
           }
@@ -352,6 +377,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     if (!tray || tray.isDestroyed()) {
       return
     }
+
     const icon = createVoiceStateTrayIcon(currentVoiceState)
     tray.setImage(icon)
     updateTrayMenu()
@@ -386,6 +412,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     if (currentVoiceState === state) {
       return
     }
+
     currentVoiceState = state
     syncTrayIcon()
     updateEmergencyEscape(state)
@@ -397,29 +424,39 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     if (currentWindowMode === mode) {
       return
     }
+
     currentWindowMode = mode
 
     switch (mode) {
       case 'hud':
         deps.openHudWindow(null, null)
         const mainWin = deps.getMainWindow()
+
         if (mainWin && !mainWin.isDestroyed()) {
           mainWin.hide()
         }
+
         break
+
       case 'canvas':
         deps.closeHudWindow()
         deps.restoreMainWindow()
+
         break
+
       case 'cua_overlay':
         deps.openCuaOverlayWindow?.()
+
         break
+
       case 'minimized':
         deps.closeHudWindow()
         const win = deps.getMainWindow()
+
         if (win && !win.isDestroyed()) {
           win.hide()
         }
+
         break
     }
 
@@ -461,6 +498,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     if (state.voiceState) {
       applyVoiceState(state.voiceState)
     }
+
     if (tray && !tray.isDestroyed() && state.tooltip) {
       tray.setToolTip(state.tooltip)
     }
@@ -469,8 +507,10 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
   // ── 7. Computer Use Agent (CUA) Desktop Automation IPC ───────────────────────
   deps.ipcMain.handle('hermes:cua:launchApp', async (_event, appName: string, args: string[] = []) => {
     log(`[voice-bridge] CUA launchApp: ${appName}`)
+
     try {
       const { spawn } = await import('child_process')
+
       const validApps: Record<string, string> = {
         notepad: 'notepad.exe',
         'notepad.exe': 'notepad.exe',
@@ -487,6 +527,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         edge: 'msedge.exe',
         chrome: 'chrome.exe'
       }
+
       const targetBinary = validApps[appName.toLowerCase().trim()] || appName.trim()
       const child = spawn(targetBinary, args, { detached: true, stdio: 'ignore', shell: true })
       child.unref()
@@ -498,15 +539,18 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         timestamp: Date.now(),
         text: `Launched ${targetBinary}`
       })
+
       return { success: true, pid: child.pid }
     } catch (err: any) {
       log(`[voice-bridge] CUA launchApp error: ${err}`)
+
       return { success: false, error: err.message }
     }
   })
 
   deps.ipcMain.handle('hermes:cua:typeText', async (_event, text: string) => {
     log(`[voice-bridge] CUA typeText: ${text}`)
+
     try {
       const { exec } = await import('child_process')
       // Escape for PowerShell WScript.Shell SendKeys
@@ -521,6 +565,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         timestamp: Date.now(),
         text: `Typed "${text}"`
       })
+
       return { success: true }
     } catch (err: any) {
       return { success: false, error: err.message }
@@ -529,6 +574,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
 
   deps.ipcMain.handle('hermes:cua:openBrowserPopup', async (_event, url: string) => {
     log(`[voice-bridge] CUA openBrowserPopup: ${url}`)
+
     try {
       const popup = new deps.BrowserWindow({
         width: 1240,
@@ -540,6 +586,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
           contextIsolation: true
         }
       })
+
       popup.loadURL(url)
 
       broadcastToAllWindows('hermes:cua:actionStart', {
@@ -548,6 +595,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         timestamp: Date.now(),
         text: `Opened browser popup: ${url}`
       })
+
       return { success: true }
     } catch (err: any) {
       return { success: false, error: err.message }
@@ -558,6 +606,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     try {
       const { shell } = await import('electron')
       await shell.openExternal(url)
+
       return { success: true }
     } catch (err: any) {
       return { success: false, error: err.message }
@@ -588,6 +637,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     },
     broadcastTranscript: (transcript: VoiceTranscriptPayload) => {
       broadcastToAllWindows('hermes:voice:transcript', transcript)
+
       if (transcript.isFinal) {
         applyVoiceState('THINKING')
       }
@@ -599,16 +649,20 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         } catch {
           // ignore
         }
+
         summonShortcutRegistered = null
       }
+
       if (escapeShortcutActive) {
         try {
           deps.globalShortcut.unregister('Escape')
         } catch {
           // ignore
         }
+
         escapeShortcutActive = false
       }
+
       if (tray && !tray.isDestroyed()) {
         tray.destroy()
         tray = null

@@ -2,11 +2,8 @@ import { useStore } from '@nanostores/react'
 import {
   Check,
   Cloud,
-  Cpu,
   Eye,
   EyeOff,
-  HelpCircle,
-  Key,
   Mic,
   Radio,
   RotateCcw,
@@ -20,12 +17,11 @@ import React, { useState } from 'react'
 
 import {
   $aiProviderConfig,
-  isFieldOverridden,
-  resetAiProviderToEnv,
-  setAiProviderConfig,
-  type AIExecutionMode,
   type CloudProvider,
-  type OfflineProvider
+  isFieldOverridden,
+  type OfflineProvider,
+  resetAiProviderToEnv,
+  setAiProviderConfig
 } from '@/store/ai-provider-config'
 
 interface Props {
@@ -39,15 +35,17 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
   const [testStatus, setTestStatus] = useState<string | null>(null)
   const [testing, setTesting] = useState(false)
 
-  if (!isOpen) return null
+  if (!isOpen) {return null}
 
   const handleTestConnection = async () => {
     setTesting(true)
     setTestStatus('Testing connection...')
+
     try {
       if (config.mode === 'offline') {
         const endpoint = (config.offlineEndpoint || 'http://localhost:11434').replace(/\/+$/, '')
         const res = await fetch(`${endpoint}/api/tags`).catch(() => null)
+
         if (res && res.ok) {
           const data = await res.json().catch(() => ({}))
           const count = Array.isArray(data.models) ? data.models.length : 0
@@ -74,6 +72,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
           } else {
             const errJson = res ? await res.json().catch(() => ({})) : {}
             const msg = errJson.error?.message || (res ? `HTTP ${res.status}` : 'Network error')
+
             if (msg.includes('Quota exceeded')) {
               setTestStatus(`✅ Gemini API Key Authenticated! (Note: Quota limit on this specific preview model; automatic resilient failover to gemini-3.5-flash is active)`)
             } else {
@@ -108,9 +107,9 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
       aria-labelledby="ai-settings-title"
+      aria-modal="true"
+      role="dialog"
       style={{
         position: 'fixed',
         inset: 0,
@@ -160,7 +159,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                 justifyContent: 'center'
               }}
             >
-              <Sparkles size={18} color="#fff" />
+              <Sparkles color="#fff" size={18} />
             </div>
             <div>
               <h2 id="ai-settings-title" style={{ fontSize: '15px', fontWeight: 600, color: '#f3f4f6', margin: 0 }}>
@@ -172,8 +171,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
             </div>
           </div>
           <button
-            onClick={onClose}
             aria-label="Close modal"
+            onClick={onClose}
             style={{
               background: 'none',
               border: 'none',
@@ -206,7 +205,6 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
             </span>
           </div>
           <button
-            type="button"
             onClick={handleResetToEnv}
             style={{
               background: 'rgba(255, 255, 255, 0.08)',
@@ -221,6 +219,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
               gap: '4px'
             }}
             title="Discard in-app UI overrides and restore values strictly from .env"
+            type="button"
           >
             <RotateCcw size={11} /> Reset to .env Defaults
           </button>
@@ -245,7 +244,6 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
               }}
             >
               <button
-                type="button"
                 onClick={() => setAiProviderConfig({ mode: 'cloud' })}
                 style={{
                   display: 'flex',
@@ -262,11 +260,11 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                   background: config.mode === 'cloud' ? 'linear-gradient(135deg, #06b6d4, #0891b2)' : 'transparent',
                   color: config.mode === 'cloud' ? '#ffffff' : '#9ca3af'
                 }}
+                type="button"
               >
                 <Cloud size={15} /> Cloud (Gemini Live / API Key)
               </button>
               <button
-                type="button"
                 onClick={() => setAiProviderConfig({ mode: 'offline' })}
                 style={{
                   display: 'flex',
@@ -283,6 +281,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                   background: config.mode === 'offline' ? 'linear-gradient(135deg, #10b981, #059669)' : 'transparent',
                   color: config.mode === 'offline' ? '#ffffff' : '#9ca3af'
                 }}
+                type="button"
               >
                 <Server size={15} /> Offline (Local Ollama)
               </button>
@@ -300,7 +299,6 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                   </span>
                 </label>
                 <select
-                  value={config.cloudProvider}
                   onChange={e => setAiProviderConfig({ cloudProvider: e.target.value as CloudProvider })}
                   style={{
                     width: '100%',
@@ -311,6 +309,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                     color: '#f3f4f6',
                     fontSize: '12px'
                   }}
+                  value={config.cloudProvider}
                 >
                   <option value="gemini">Google Gemini (Gemini Live & Flash — Sophia Brain)</option>
                   <option value="nous">Nous Research (Hermes 3 — 70B & 405B Native)</option>
@@ -345,7 +344,6 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                 </div>
 
                 <select
-                  value={config.routingStrategy || 'dynamic_smart'}
                   onChange={e => setAiProviderConfig({ routingStrategy: e.target.value as any })}
                   style={{
                     width: '100%',
@@ -356,6 +354,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                     color: '#fff',
                     fontSize: '12px'
                   }}
+                  value={config.routingStrategy || 'dynamic_smart'}
                 >
                   <option value="dynamic_smart">🌟 Smart Dynamic Tiering (Free First, Escalate for Urgent)</option>
                   <option value="free_only">🟢 100% Free & Local Only ($0 API Cost)</option>
@@ -381,10 +380,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
-                    type={showApiKey ? 'text' : 'password'}
-                    placeholder={`Enter ${config.cloudProvider.toUpperCase()} API Key`}
-                    value={config.cloudApiKey}
                     onChange={e => setAiProviderConfig({ cloudApiKey: e.target.value })}
+                    placeholder={`Enter ${config.cloudProvider.toUpperCase()} API Key`}
                     style={{
                       width: '100%',
                       padding: '9px 42px 9px 12px',
@@ -395,9 +392,10 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                       fontSize: '12px',
                       fontFamily: 'monospace'
                     }}
+                    type={showApiKey ? 'text' : 'password'}
+                    value={config.cloudApiKey}
                   />
                   <button
-                    type="button"
                     onClick={() => setShowApiKey(!showApiKey)}
                     style={{
                       position: 'absolute',
@@ -409,6 +407,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                       color: '#9ca3af',
                       cursor: 'pointer'
                     }}
+                    type="button"
                   >
                     {showApiKey ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
@@ -424,10 +423,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                     </span>
                   </label>
                   <input
-                    type="text"
-                    placeholder="gemini-flash-latest, gemini-3.5-flash"
-                    value={config.cloudModel}
                     onChange={e => setAiProviderConfig({ cloudModel: e.target.value })}
+                    placeholder="gemini-flash-latest, gemini-3.5-flash"
                     style={{
                       width: '100%',
                       padding: '9px 12px',
@@ -437,6 +434,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                       color: '#f3f4f6',
                       fontSize: '12px'
                     }}
+                    type="text"
+                    value={config.cloudModel}
                   />
                 </div>
                 <div>
@@ -447,10 +446,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                     </span>
                   </label>
                   <input
-                    type="text"
-                    placeholder="models/gemini-3.8-live"
-                    value={config.geminiLiveModel}
                     onChange={e => setAiProviderConfig({ geminiLiveModel: e.target.value })}
+                    placeholder="models/gemini-3.8-live"
                     style={{
                       width: '100%',
                       padding: '9px 12px',
@@ -460,6 +457,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                       color: '#f3f4f6',
                       fontSize: '12px'
                     }}
+                    type="text"
+                    value={config.geminiLiveModel}
                   />
                 </div>
               </div>
@@ -485,20 +484,20 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
                     <span style={{ fontSize: '12px', color: '#e2e8f0' }}>Pure Gemini Live All-in-One Pipeline</span>
                     <input
-                      type="checkbox"
                       checked={config.pureGeminiLive}
                       onChange={e => setAiProviderConfig({ pureGeminiLive: e.target.checked })}
                       style={{ accentColor: '#06b6d4', width: '16px', height: '16px' }}
+                      type="checkbox"
                     />
                   </label>
 
                   <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
                     <span style={{ fontSize: '12px', color: '#e2e8f0' }}>Instant ASR Interruption / Barge-in</span>
                     <input
-                      type="checkbox"
                       checked={config.asrInterruption}
                       onChange={e => setAiProviderConfig({ asrInterruption: e.target.checked })}
                       style={{ accentColor: '#06b6d4', width: '16px', height: '16px' }}
+                      type="checkbox"
                     />
                   </label>
 
@@ -517,7 +516,6 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                   Local Engine
                 </label>
                 <select
-                  value={config.offlineProvider}
                   onChange={e => setAiProviderConfig({ offlineProvider: e.target.value as OfflineProvider })}
                   style={{
                     width: '100%',
@@ -528,6 +526,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                     color: '#f3f4f6',
                     fontSize: '12px'
                   }}
+                  value={config.offlineProvider}
                 >
                   <option value="ollama">Ollama (Default: http://localhost:11434)</option>
                   <option value="llamacpp">llama.cpp server</option>
@@ -543,10 +542,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                   </span>
                 </label>
                 <input
-                  type="text"
-                  placeholder="http://localhost:11434"
-                  value={config.offlineEndpoint}
                   onChange={e => setAiProviderConfig({ offlineEndpoint: e.target.value })}
+                  placeholder="http://localhost:11434"
                   style={{
                     width: '100%',
                     padding: '9px 12px',
@@ -557,6 +554,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                     fontSize: '12px',
                     fontFamily: 'monospace'
                   }}
+                  type="text"
+                  value={config.offlineEndpoint}
                 />
               </div>
 
@@ -568,10 +567,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                   </span>
                 </label>
                 <input
-                  type="text"
-                  placeholder="llama3.2, mistral, hermes3, qwen2.5-coder"
-                  value={config.offlineModel}
                   onChange={e => setAiProviderConfig({ offlineModel: e.target.value })}
+                  placeholder="llama3.2, mistral, hermes3, qwen2.5-coder"
                   style={{
                     width: '100%',
                     padding: '9px 12px',
@@ -581,6 +578,8 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
                     color: '#f3f4f6',
                     fontSize: '12px'
                   }}
+                  type="text"
+                  value={config.offlineModel}
                 />
                 <p style={{ fontSize: '11px', color: '#6b7280', margin: '4px 0 0' }}>
                   Run <code>ollama run {config.offlineModel || 'llama3.2'}</code> in your Windows terminal.
@@ -605,37 +604,37 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
 
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
               <span style={{ fontSize: '12px', color: '#d1d5db', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Mic size={15} color="#06b6d4" /> Always-On Hands-Free Microphone
+                <Mic color="#06b6d4" size={15} /> Always-On Hands-Free Microphone
               </span>
               <input
-                type="checkbox"
                 checked={config.handsfreeEnabled}
                 onChange={e => setAiProviderConfig({ handsfreeEnabled: e.target.checked })}
                 style={{ width: '16px', height: '16px', accentColor: '#06b6d4', cursor: 'pointer' }}
+                type="checkbox"
               />
             </label>
 
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
               <span style={{ fontSize: '12px', color: '#d1d5db', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Volume2 size={15} color="#10b981" /> Spoken Voice Audio Feedback (TTS)
+                <Volume2 color="#10b981" size={15} /> Spoken Voice Audio Feedback (TTS)
               </span>
               <input
-                type="checkbox"
                 checked={config.voiceFeedbackEnabled}
                 onChange={e => setAiProviderConfig({ voiceFeedbackEnabled: e.target.checked })}
                 style={{ width: '16px', height: '16px', accentColor: '#10b981', cursor: 'pointer' }}
+                type="checkbox"
               />
             </label>
 
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
               <span style={{ fontSize: '12px', color: '#d1d5db', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Radio size={15} color="#8b5cf6" /> Require Wake Word ("Hey Hermes")
+                <Radio color="#8b5cf6" size={15} /> Require Wake Word ("Hey Hermes")
               </span>
               <input
-                type="checkbox"
                 checked={config.wakeWordEnabled}
                 onChange={e => setAiProviderConfig({ wakeWordEnabled: e.target.checked })}
                 style={{ width: '16px', height: '16px', accentColor: '#8b5cf6', cursor: 'pointer' }}
+                type="checkbox"
               />
             </label>
           </div>
@@ -670,7 +669,6 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
           }}
         >
           <button
-            type="button"
             disabled={testing}
             onClick={handleTestConnection}
             style={{
@@ -685,11 +683,11 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
               alignItems: 'center',
               gap: '6px'
             }}
+            type="button"
           >
             <Zap size={13} /> {testing ? 'Testing...' : 'Test Connection'}
           </button>
           <button
-            type="button"
             onClick={onClose}
             style={{
               padding: '7px 18px',
@@ -701,6 +699,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
               fontWeight: 600,
               cursor: 'pointer'
             }}
+            type="button"
           >
             Done
           </button>

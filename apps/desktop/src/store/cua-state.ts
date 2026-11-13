@@ -40,17 +40,20 @@ export async function abortCua(): Promise<void> {
 export function recordCuaActionStart(payload: CuaActionStartPayload): void {
   $cuaActive.set(true)
   $cuaLastAction.set(payload)
+
   const item = {
     id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     action: `${payload.action}${payload.elementId ? ` [SOM #${payload.elementId}]` : ''}${payload.text ? ` "${payload.text}"` : ''}`,
     timestamp: payload.timestamp
   }
+
   $cuaActionHistory.set([item, ...$cuaActionHistory.get().slice(0, 19)])
 }
 
 /** Record completion of a CUA action */
 export function recordCuaActionEnd(payload: CuaActionEndPayload): void {
   const current = $cuaActionHistory.get()
+
   if (current.length > 0) {
     const updated = [...current]
     updated[0] = {
@@ -105,7 +108,7 @@ export function initCuaIpc(): () => void {
 
 /** Seed demo Set-of-Marks elements for visual verification and testing */
 export function seedDemoCuaElementsIfEmpty(): void {
-  if ($cuaElements.get().length > 0) return
+  if ($cuaElements.get().length > 0) {return}
 
   const sampleMarks: CuaUIElement[] = [
     {
