@@ -21,3 +21,11 @@ Remove accidental root-level gateway debugging captures (`gwlog_live_head_*.log`
 
 ## Next validation
 On Windows: install pinned toolchain, run desktop typecheck, unit tests, Electron launch smoke test, voice-first boot and back-end tool calling, then Windows package build. Compare baseline and changed installer sizes.
+
+## Pass 2 — bundled payload precision
+- Verified `electron-builder.config.cjs` already whitelists only `dist/**`, `assets/**`, `public/**` and `package.json` for Electron app files.
+- Verified `scripts/bundles/payload.py` excludes `website`, `apps`, `web`, `ui-tui`, tests and scripts from the bundled Hermes Python agent snapshot. Removing these trees from Git is **not** an installer-size win.
+- Added `contributors/` to the payload snapshot exclusion: keep full source attribution in Git, but avoid copying the archive of contributor email files into a shipped Windows agent runtime.
+- Added a synthetic Git snapshot regression test to ensure the agent runtime remains present and contributor archive, test and website trees stay out of the shipped snapshot.
+- Deliberately retained `plugin-catalog/`, `optional-skills/`, `plugins/`, `skills/`, and all runtime state modules until their runtime discovery/feature wiring is audited; stripping them without tests risks disabling Sofia tools.
+- No Windows executable was built during this Chat-only pass; actual package size and feature smoke tests remain pending.
