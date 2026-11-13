@@ -420,7 +420,7 @@ export function ProvidersSettings({
     return byEnv
   }, [vars])
 
-  const apiKeysShown = view === 'keys' || (oauthProviders.length === 0 && view !== 'custom-endpoints')
+  const apiKeysShown = view === 'keys' || (view === 'accounts' && oauthProviders.length === 0)
 
   // Deep link from a rejected-key error card (?pview=keys&key=<ENV_KEY>):
   // clear the filter, expand that provider's card and scroll to it.
@@ -548,7 +548,7 @@ export function ProvidersSettings({
   const hasOauth = oauthProviders.length > 0
   // The sidebar subnav owns the Accounts/API-keys split now; with no OAuth
   // providers there's nothing for the "Accounts" view to show, so fall to keys.
-  const showApiKeys = view === 'keys' || (!hasOauth && view !== 'custom-endpoints')
+  const showApiKeys = view === 'keys' || (view === 'accounts' && !hasOauth)
 
   const keyGroups = buildProviderKeyGroups(vars)
 
