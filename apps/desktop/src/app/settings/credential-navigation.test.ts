@@ -7,7 +7,10 @@ import type { OverlayNavGroup } from '../overlays/overlay-split-layout'
 
 import { groupCredentialNavigation } from './credential-navigation'
 
-const copy = TRANSLATIONS.en.settings.nav
+const copy = {
+  accountsAndProviders: TRANSLATIONS.en.settings.nav.providers,
+  credentials: TRANSLATIONS.en.settings.nav.apiKeys
+}
 const link = (id: string, active = false) => ({ id, active, icon: KeyRound, label: id, onSelect: vi.fn() })
 
 describe('credential navigation ownership', () => {
@@ -43,10 +46,13 @@ describe('credential navigation ownership', () => {
     for (const locale of Object.values(TRANSLATIONS)) {
       const providers = link('providers')
       const vault = link('vault', true)
-      const result = groupCredentialNavigation([providers, vault], locale.settings.nav)
-      expect(result.find(group => group.id === 'providers')?.label).toBe(locale.settings.nav.accountsAndProviders)
-      expect(locale.settings.nav.accountsAndProviders).toBeTruthy()
-      expect(locale.settings.nav.credentials).toBeTruthy()
+      const result = groupCredentialNavigation([providers, vault], {
+        accountsAndProviders: locale.settings.nav.providers,
+        credentials: locale.settings.nav.apiKeys
+      })
+      expect(result.find(group => group.id === 'providers')?.label).toBe(locale.settings.nav.providers)
+      expect(locale.settings.nav.providers).toBeTruthy()
+      expect(locale.settings.nav.apiKeys).toBeTruthy()
       expect(result).toContain(vault)
     }
   })
