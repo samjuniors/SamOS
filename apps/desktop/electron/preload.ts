@@ -130,7 +130,13 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       return () => ipcRenderer.removeListener('hermes:voice:transcript', listener)
     },
     playTtsChunk: (chunk: unknown) => ipcRenderer.invoke('hermes:voice:playTtsChunk', chunk),
-    interrupt: () => ipcRenderer.invoke('hermes:voice:interrupt')
+    interrupt: () => ipcRenderer.invoke('hermes:voice:interrupt'),
+    onInterrupted: (callback: () => void) => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:voice:interrupt', listener)
+
+      return () => ipcRenderer.removeListener('hermes:voice:interrupt', listener)
+    }
   },
   // ── Computer Use Agent (CUA) Desktop Automation (VOICE_AI_OS_SPEC §4.3) ──
   cua: {
