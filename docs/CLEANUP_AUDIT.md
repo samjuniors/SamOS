@@ -62,3 +62,7 @@ Note: This is **source/CI hygiene**, not proof of a smaller Windows binary. The 
 ## Runtime-truth hardening
 
 Fresh SamOS profiles now have zero reported spending and no pre-completed tasks. The five predefined organizational roles are local templates, not an executed Paperclip organization; they start idle with zero completed jobs and zero charged spend. Previously saved local profiles are not forcibly overwritten because doing so could destroy user-modified data. Self-repair status starts as **NOT_CHECKED** rather than an unjustified 100% healthy result; checks must run before even basic status can be displayed. Native Windows verification is still pending.
+
+## Agent-control truthfulness
+
+The live AI Employees grid no longer silently creates demo workers on mount. Sample workers can still be deliberately created in development mode for previews. Subagent pause/resume/stop/steer now return a failure when the native bridge is absent or rejects the request; the UI store changes only after a successful backend acknowledgment. The bridge's actual cancellation guarantee remains to be verified with Windows real-host acceptance.

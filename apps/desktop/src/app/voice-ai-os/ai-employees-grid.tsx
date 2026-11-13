@@ -55,10 +55,7 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
   const [steeringText, setSteeringText] = useState<string>('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  // Seed initial demo employees if store is empty
-  useMemo(() => {
-    seedDemoAIEmployeesIfEmpty()
-  }, [])
+  // Live agent telemetry begins empty; demo workers require explicit developer action.
 
   // Filter and search computation
   const filteredEmployees = useMemo(() => {
@@ -155,14 +152,17 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSpawnDemoEmployee}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors shadow-lg shadow-cyan-500/20"
-          >
-            <Bot className="size-3.5" />
-            <span>+ Delegate Task</span>
-          </button>
+          {import.meta.env.DEV && (
+            <button
+              type="button"
+              onClick={handleSpawnDemoEmployee}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors"
+              title="Create a local sample only; no actual agent execution"
+            >
+              <Bot className="size-3.5" />
+              <span>+ Demo Worker</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -213,13 +213,15 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
               Speak a multi-step task like "Refactor the audio player and run tests" to spawn
               autonomous subagents.
             </p>
-            <button
-              type="button"
-              onClick={handleSpawnDemoEmployee}
-              className="mt-4 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs text-white"
-            >
-              Spawn Test Subagent
-            </button>
+            {import.meta.env.DEV && (
+              <button
+                type="button"
+                onClick={handleSpawnDemoEmployee}
+                className="mt-4 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs text-white"
+              >
+                Add sample worker (does not run)
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6">
