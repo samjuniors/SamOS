@@ -24,3 +24,8 @@
 2. `docs/SAMOS_WINDOWS_CI.md` defines initial verification and the limitations of an unpacked electron-builder build.
 3. No remote push, merge, release, skill installation, or destructive external action by Sofia without the appropriate owner approval.
 4. **Paperclip integration is not verified.** A catalog entry or proposed design is not equivalent to a running orchestration backend.
+
+## Opt-in lean agent payload (not production default)
+- `scripts/bundles/stage.py --frontend-profile electron-only` now stages the native agent without automatically building TUI, web dashboard and browser webapp products. The existing default `full` path is **unchanged** for safety.
+- From `apps/desktop`, `pnpm run payload:samos` selects the lean profile. This is an experimental bundle input; do not promote it into the signed installer until a Windows integration test proves local voice/tool sessions, plugin browsing and all UI entrypoints work without the omitted products.
+- The `full` and `electron-only` profiles share the same `stage_native` backend and resource manifest. This change does not remove `web/` or `ui-tui/` source yet.

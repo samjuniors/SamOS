@@ -18,3 +18,8 @@
 - Installer bytes compared against a baseline before pruning other platform builds
 
 The existing Windows install/update and desktop attach workflows remain preserved until they are brought under SamOS release ownership and explicitly verified. `main` should remain protected; PRs stay draft until the owner accepts these checks.
+
+## Lean bundle profile under test
+- `pnpm --dir apps/desktop run payload:samos` explicitly passes `--frontend-profile electron-only` to the native bundle stage driver.
+- Default `pnpm --dir apps/desktop run payload` still builds the existing TUI, web and webapp products; no release behavior changes yet.
+- `tests/scripts/test_samos_windows_bundle_profile.py` checks profile selection, no frontend staging, and rejection of conflicting explicit UI products.

@@ -22,7 +22,14 @@ def main(argv=None) -> int:
     parser.add_argument("--cache", type=Path, help="persistent uv build cache")
     parser.add_argument("--tui", type=Path)
     parser.add_argument("--web", type=Path)
+    parser.add_argument("--frontend-profile", choices=("full", "electron-only"), default="full",
+                        help="full stages the TUI/web/webapp; electron-only stages only the agent runtime")
     args = parser.parse_args(argv)
+    if args.frontend_profile == "electron-only":
+        if args.tui is not None or args.web is not None:
+            parser.error("--frontend-profile electron-only cannot accept --tui or --web")
+        args.frontends = {}
+        return stage_native(args)
     if bool(args.tui) != bool(args.web):
         parser.error("supply both --tui and --web products, or neither to build them")
     out = Path(args.out).resolve()

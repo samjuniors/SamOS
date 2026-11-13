@@ -42,6 +42,10 @@ jobs:
           extras: '[]'
           test-environment: 'true'
 
+      - name: Verify Electron-only payload staging contract
+        shell: pwsh
+        run: python -m pytest -q tests/scripts/test_samos_windows_bundle_profile.py
+
       - name: Install locked JavaScript dependencies
         shell: pwsh
         run: just js-install
