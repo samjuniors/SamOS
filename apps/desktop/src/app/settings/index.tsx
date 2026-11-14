@@ -66,8 +66,8 @@ import {
   usePluginSettingsRoute
 } from './plugin-settings'
 import { SettingsBreadcrumbContext } from './primitives'
-import { SettingsOverview } from './settings-overview'
 import { PROVIDER_VIEWS, ProvidersSettings, type ProviderView } from './providers-settings'
+import { SettingsOverview } from './settings-overview'
 import { SessionsSettings } from './sessions-settings'
 import { SettingsSubpageHeader } from './subpage-navigation'
 import { resolveSettingsSubpage, settingsSubpageIcon, settingsSubpages } from './subpages'
