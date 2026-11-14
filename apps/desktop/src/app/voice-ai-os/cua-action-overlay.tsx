@@ -1,3 +1,5 @@
+import './voice-ai-os.css'
+
 import { useStore } from '@nanostores/react'
 import {
   AlertOctagon,
@@ -9,13 +11,10 @@ import {
   FileText,
   Folder,
   MousePointer,
-  Play,
   Radio,
-  ShieldAlert,
-  Tv,
-  XCircle
+  Tv
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   $cuaActionHistory,
@@ -27,12 +26,11 @@ import {
   recordCuaActionStart,
   seedDemoCuaElementsIfEmpty
 } from '@/store/cua-state'
-import { setActiveWorkspaceTab } from '@/store/workspace-tab-state'
 import { speakResponse } from '@/store/voice-state'
-import { navigateToUrl } from './browser-workspace'
+import { setActiveWorkspaceTab } from '@/store/workspace-tab-state'
 
+import { navigateToUrl } from './browser-workspace'
 import type { CuaActionStartPayload, CuaUIElement } from './types'
-import './voice-ai-os.css'
 
 interface CuaActionOverlayProps {
   className?: string
@@ -78,14 +76,16 @@ export function CuaActionOverlay({
     }
 
     window.addEventListener('keydown', handleKeyDown)
+
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isCuaActive])
 
   // Spawn visual ripple whenever lastAction is a click or coordinate action
   useEffect(() => {
-    if (!lastAction) return
+    if (!lastAction) {return}
 
     let coords: [number, number] | undefined = lastAction.coordinate
+
     if (!coords && lastAction.targetBounds) {
       coords = [
         lastAction.targetBounds.x + lastAction.targetBounds.width / 2,
@@ -99,6 +99,7 @@ export function CuaActionOverlay({
         x: coords[0],
         y: coords[1]
       }
+
       setRipples(prev => [...prev.slice(-4), newRipple])
 
       const timer = setTimeout(() => {
@@ -113,6 +114,7 @@ export function CuaActionOverlay({
   const handleLaunchNotepad = async () => {
     $cuaTargetApp.set('Notepad')
     $cuaActive.set(true)
+
     if (cuaApi?.launchApp) {
       await cuaApi.launchApp('notepad.exe')
       recordCuaActionStart({
@@ -133,12 +135,14 @@ export function CuaActionOverlay({
         }
       }, 850)
     }
+
     void speakResponse('Opening Notepad on your computer and typing greeting message.')
   }
 
   const handleLaunchCalc = async () => {
     $cuaTargetApp.set('Calculator')
     $cuaActive.set(true)
+
     if (cuaApi?.launchApp) {
       await cuaApi.launchApp('calc.exe')
       recordCuaActionStart({
@@ -148,12 +152,14 @@ export function CuaActionOverlay({
         text: 'Launched Calc.exe'
       })
     }
+
     void speakResponse('Opening Calculator on your Windows computer.')
   }
 
   const handleLaunchExplorer = async () => {
     $cuaTargetApp.set('Explorer')
     $cuaActive.set(true)
+
     if (cuaApi?.launchApp) {
       await cuaApi.launchApp('explorer.exe')
       recordCuaActionStart({
@@ -163,11 +169,13 @@ export function CuaActionOverlay({
         text: 'Launched Explorer.exe'
       })
     }
+
     void speakResponse('Opening Windows File Explorer.')
   }
 
   const handleOpenYouTube = (popup = false) => {
     navigateToUrl('https://www.youtube.com', popup)
+
     if (!popup) {
       setActiveWorkspaceTab('browser')
       void speakResponse('Opening YouTube in your browser workspace.')
@@ -205,24 +213,24 @@ export function CuaActionOverlay({
       targetBounds: el.bounds,
       timestamp: Date.now()
     }
+
     recordCuaActionStart(actionPayload)
   }
 
   return (
     <div
+      aria-label="Computer Use Agent Visual Overlay"
       className={`cua-overlay-root pointer-events-none select-none ${className}`}
       role="region"
-      aria-label="Computer Use Agent Visual Overlay"
     >
       {/* Top Floating Safety Killswitch & Telemetry Banner */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-3 z-[10010] pointer-events-auto">
         {/* Safety Killswitch Pill */}
         <button
-          type="button"
-          onClick={() => void abortCua()}
-          className="cua-killswitch-pill flex items-center gap-2 px-4 py-2 rounded-full text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-400"
-          title="Emergency Abort (Press ESC)"
           aria-label="Emergency Stop Computer Automation"
+          className="cua-killswitch-pill flex items-center gap-2 px-4 py-2 rounded-full text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-400"
+          onClick={() => void abortCua()}
+          type="button"
         >
           <AlertOctagon className="size-4 animate-pulse fill-white/20" />
           <span>SAFETY STOP (ESC)</span>
@@ -237,11 +245,10 @@ export function CuaActionOverlay({
 
         {/* Set-of-Marks Visibility Toggle */}
         <button
-          type="button"
-          onClick={() => setShowSomTags(prev => !prev)}
-          className="voice-os-glass p-2 rounded-full text-[#9aa5b8] hover:text-white border border-[#262c37] hover:bg-[#1b202a] transition-colors cursor-pointer"
-          title={showSomTags ? 'Hide Set-of-Marks tags' : 'Show Set-of-Marks tags'}
           aria-label={showSomTags ? 'Hide Set-of-Marks tags' : 'Show Set-of-Marks tags'}
+          className="voice-os-glass p-2 rounded-full text-[#9aa5b8] hover:text-white border border-[#262c37] hover:bg-[#1b202a] transition-colors cursor-pointer"
+          onClick={() => setShowSomTags(prev => !prev)}
+          type="button"
         >
           {showSomTags ? <Eye className="size-3.5 text-[#ff6a00]" /> : <EyeOff className="size-3.5" />}
         </button>
@@ -250,60 +257,60 @@ export function CuaActionOverlay({
       {/* Quick Action Dock for Live Desktop Tasks & YouTube (60-30-10 Palette) */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 flex items-center gap-2 z-[10010] pointer-events-auto flex-wrap justify-center max-w-2xl px-2">
         <button
-          type="button"
-          onClick={handleLaunchNotepad}
+          aria-label="Open Notepad on your PC and type simulated greeting"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/15 hover:bg-[#ff6a00]/25 text-[#ff7f24] border border-[#ff6a00]/40 text-xs font-semibold backdrop-blur-md shadow-lg shadow-[#ff6a00]/15 transition-all cursor-pointer"
-          title="Open Notepad on your PC and type simulated greeting"
+          onClick={handleLaunchNotepad}
+          type="button"
         >
           <FileText className="size-3.5 text-[#ff6a00]" />
           <span>📝 Open Notepad & Type</span>
         </button>
 
         <button
-          type="button"
-          onClick={handleLaunchCalc}
+          aria-label="Open Calculator on your PC"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14171f] hover:bg-[#1b202a] text-slate-200 border border-[#262c37] text-xs font-semibold backdrop-blur-md shadow-lg transition-all cursor-pointer"
-          title="Open Calculator on your PC"
+          onClick={handleLaunchCalc}
+          type="button"
         >
           <Calculator className="size-3.5 text-[#ff7f24]" />
           <span>🧮 Calculator</span>
         </button>
 
         <button
-          type="button"
-          onClick={handleLaunchExplorer}
+          aria-label="Open Windows File Explorer"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14171f] hover:bg-[#1b202a] text-slate-200 border border-[#262c37] text-xs font-semibold backdrop-blur-md shadow-lg transition-all cursor-pointer"
-          title="Open Windows File Explorer"
+          onClick={handleLaunchExplorer}
+          type="button"
         >
           <Folder className="size-3.5 text-[#9aa5b8]" />
           <span>📁 Explorer</span>
         </button>
 
         <button
-          type="button"
-          onClick={handleSimulateDragClick}
+          aria-label="Simulate Click & Drag with visual ripple"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/15 hover:bg-[#ff6a00]/25 text-[#ff7f24] border border-[#ff6a00]/40 text-xs font-semibold backdrop-blur-md shadow-lg shadow-[#ff6a00]/15 transition-all cursor-pointer"
-          title="Simulate Click & Drag with visual ripple"
+          onClick={handleSimulateDragClick}
+          type="button"
         >
           <MousePointer className="size-3.5 text-[#ff6a00]" />
           <span>🖱️ Click & Drag</span>
         </button>
 
         <button
-          type="button"
-          onClick={() => handleOpenYouTube(false)}
+          aria-label="Open YouTube in Workspace Browser"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14171f] hover:bg-[#1b202a] text-slate-200 border border-[#262c37] text-xs font-semibold backdrop-blur-md shadow-lg transition-all cursor-pointer"
-          title="Open YouTube in Workspace Browser"
+          onClick={() => handleOpenYouTube(false)}
+          type="button"
         >
           <Tv className="size-3.5 text-[#ff6a00]" />
           <span>📺 YouTube (Workspace)</span>
         </button>
 
         <button
-          type="button"
-          onClick={() => handleOpenYouTube(true)}
+          aria-label="Open YouTube in Dedicated Popup Window"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/20 hover:bg-[#ff6a00]/30 text-[#ff944d] border border-[#ff6a00]/50 text-xs font-semibold backdrop-blur-md shadow-lg shadow-[#ff6a00]/20 transition-all cursor-pointer"
-          title="Open YouTube in Dedicated Popup Window"
+          onClick={() => handleOpenYouTube(true)}
+          type="button"
         >
           <ExternalLink className="size-3.5 text-[#ff7f24]" />
           <span>🪟 YouTube (Popup)</span>
@@ -331,6 +338,7 @@ export function CuaActionOverlay({
       {showSomTags &&
         elements.map(el => {
           const isTargeted = lastAction?.elementId === el.id
+
           return (
             <div key={el.id}>
               {/* Optional element boundary outline */}
@@ -340,24 +348,24 @@ export function CuaActionOverlay({
                     ? 'border-amber-400 bg-amber-400/20 shadow-[0_0_12px_rgba(245,158,11,0.5)] z-[10001]'
                     : 'border-amber-500/30 hover:border-amber-400 hover:bg-amber-400/10 z-[9999]'
                 }`}
+                onClick={() => handleSimulateClick(el)}
                 style={{
                   left: `${el.bounds.x}px`,
                   top: `${el.bounds.y}px`,
                   width: `${el.bounds.width}px`,
                   height: `${el.bounds.height}px`
                 }}
-                onClick={() => handleSimulateClick(el)}
                 title={`SOM #${el.id}: ${el.label} (${el.role}) - Click to simulate target`}
               />
 
               {/* Numbered Set-of-Marks Tag Badge */}
               <div
                 className="cua-som-badge pointer-events-auto cursor-pointer"
+                onClick={() => handleSimulateClick(el)}
                 style={{
                   left: `${el.bounds.x + 12}px`,
                   top: `${el.bounds.y + 10}px`
                 }}
-                onClick={() => handleSimulateClick(el)}
               >
                 {el.id}
               </div>
@@ -368,8 +376,8 @@ export function CuaActionOverlay({
       {/* Dynamic Animated Click Ripples */}
       {ripples.map(rip => (
         <div
-          key={rip.id}
           className="cua-click-ripple"
+          key={rip.id}
           style={{
             left: `${rip.x}px`,
             top: `${rip.y}px`
@@ -397,7 +405,7 @@ export function CuaActionOverlay({
           {actionHistory.length > 0 && (
             <div className="mt-1.5 pt-1.5 border-t border-[#262c37] text-[10px] text-[#9aa5b8] space-y-0.5">
               {actionHistory.slice(0, 2).map(act => (
-                <div key={act.id} className="truncate">
+                <div className="truncate" key={act.id}>
                   ✓ {act.action}
                 </div>
               ))}

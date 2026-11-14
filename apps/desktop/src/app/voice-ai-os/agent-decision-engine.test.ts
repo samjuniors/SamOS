@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { decideAndExecuteAgentAction } from '@/store/agent-decision-engine'
 import {
   $companyAgents,
   $companyProfile,
@@ -7,9 +8,9 @@ import {
   createCompanyTask,
   updateTaskStatus
 } from '@/store/company-state'
-import { decideAndExecuteAgentAction } from '@/store/agent-decision-engine'
-import { $browserCurrentUrl } from './browser-workspace'
 import { $activeWorkspaceTab } from '@/store/workspace-tab-state'
+
+import { $browserCurrentUrl } from './browser-workspace'
 
 describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, () => {
   beforeEach(() => {
@@ -86,10 +87,53 @@ describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, ()
   })
 
   it('dynamically extracts note content and launches Notepad via CUA', async () => {
+    const launchApp = vi.fn().mockResolvedValue({ success: true })
+    const typeText = vi.fn().mockResolvedValue({ success: true })
+
+    const previousDesktop = (window as any).hermesDesktop
+
+    ;(window as any).hermesDesktop = { cua: { launchApp, typeText } }
+
+    try {
     const reply = await decideAndExecuteAgentAction('Write down a note: server deployment is at midnight')
 
     expect(reply.toLowerCase()).toMatch(/note|midnight|deployment/)
     expect($activeWorkspaceTab.get()).toBe('cua')
+    expect(launchApp).toHaveBeenCalledWith('notepad.exe')
+    expect(typeText).toHaveBeenCalled()
+    } finally {
+      ;(window as any).hermesDesktop = previousDesktop
+    }
+  })
+
+  it('does not report launching an app when desktop computer-use is unavailable', async () => {
+    const previousDesktop = (window as any).hermesDesktop
+
+    ;(window as any).hermesDesktop = undefined
+
+    try {
+      const reply = await decideAndExecuteAgentAction('Open calculator')
+      expect(reply).toMatch(/not connected/i)
+      expect(reply).toMatch(/did not launch/i)
+    } finally {
+      ;(window as any).hermesDesktop = previousDesktop
+    }
+  })
+
+  it('reports an explicit IPC denial without claiming a successful launch', async () => {
+    const previousDesktop = (window as any).hermesDesktop
+
+    ;(window as any).hermesDesktop = {
+      cua: { launchApp: vi.fn().mockResolvedValue({ success: false, error: 'not approved' }) }
+    }
+
+    try {
+      const reply = await decideAndExecuteAgentAction('Open calculator')
+      expect(reply).toMatch(/could not launch/i)
+      expect(reply).toMatch(/not approved/i)
+    } finally {
+      ;(window as any).hermesDesktop = previousDesktop
+    }
   })
 
   it('intelligently answers status questions about specific team members', async () => {
@@ -119,6 +163,7 @@ describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, ()
 
     expect(reply.length).toBeGreaterThan(10)
     const agents = $companyAgents.get()
+
     const seoAgent = agents.find(
       a =>
         a.role.toLowerCase().includes('seo') ||
@@ -126,6 +171,7 @@ describe('Hermes High-Agency Autonomous Decision Engine', { timeout: 30000 }, ()
         a.role.toLowerCase().includes('marketing') ||
         a.name.toLowerCase().includes('apollo')
     )
+
     expect(seoAgent).toBeDefined()
   })
 

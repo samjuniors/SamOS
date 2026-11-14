@@ -113,21 +113,15 @@ describe('Paperclip-Inspired Company & Multi-Agent Org State', () => {
     expect($companyAgents.get().some(a => a.name === 'Cipher')).toBe(true)
   })
 
-  it('advances in-progress tasks to in_review during autonomous heartbeat', async () => {
-    const task = createCompanyTask(
-      'Optimize Aoede Duplex Audio',
-      'Audio streaming buffer optimization',
-      'agent_atlas_cto',
-      'urgent'
-    )
+  it('never fakes task completion or spending without Paperclip execution', async () => {
+    const task = createCompanyTask('Optimize Aoede Duplex Audio', 'Audio buffer optimization', 'agent_atlas_cto', 'urgent')
     updateTaskStatus(task.id, 'in_progress')
-
     await runCompanyHeartbeat()
-
-    const updatedTask = $companyTasks.get().find(t => t.id === task.id)
-    expect(updatedTask?.status).toBe('in_review')
-    expect(updatedTask?.diffPreview).toBeDefined()
-    expect(updatedTask?.spentUsd).toBeGreaterThan(0)
+    const updated = $companyTasks.get().find(t => t.id === task.id)
+    expect(updated?.status).toBe('in_progress')
+    expect(updated?.diffPreview).toBeUndefined()
+    expect(updated?.spentUsd).toBe(0)
+    expect($heartbeatLog.get()[0]).toContain('Paperclip execution is not connected')
   })
 
   it('founder approval gate: approving task moves to done and updates P&L', () => {
@@ -139,6 +133,7 @@ describe('Paperclip-Inspired Company & Multi-Agent Org State', () => {
       'UI/UX',
       20
     )
+
     updateTaskStatus(task.id, 'in_review')
     task.spentUsd = 15.50
     $companyTasks.set([task])
@@ -164,6 +159,7 @@ describe('Paperclip-Inspired Company & Multi-Agent Org State', () => {
       'agent_atlas_cto',
       'high'
     )
+
     updateTaskStatus(task.id, 'in_review')
     $companyTasks.set([task])
 

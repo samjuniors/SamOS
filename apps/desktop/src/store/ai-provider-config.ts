@@ -36,7 +36,7 @@ const UI_OVERRIDES_KEY = 'hermes_ai_provider_ui_overrides'
 const BASELINE_DEFAULTS: AIProviderConfig = {
   mode: 'cloud',
   cloudProvider: 'gemini',
-  cloudApiKey: 'AQ.Ab8RN6LneQSowdBs768dnC0okpP1521KA9JUPkZyYmt-AFAh-A',
+  cloudApiKey: '',
   cloudModel: 'gemini-flash-latest',
   routingStrategy: 'dynamic_smart',
   tier1FreeModel: 'gemini-3.1-flash-lite',
@@ -67,12 +67,24 @@ export const $uiOverrides = atom<Partial<AIProviderConfig>>(loadSavedOverrides()
 function loadSavedOverrides(): Partial<AIProviderConfig> {
   try {
     const raw = localStorage.getItem(UI_OVERRIDES_KEY)
+
     if (raw) {
-      return JSON.parse(raw)
+      const parsed = JSON.parse(raw) as Partial<AIProviderConfig>
+
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {return {}}
+
+      // Scrub keys previously persisted by older SamOS versions.
+      if (Object.prototype.hasOwnProperty.call(parsed, 'cloudApiKey')) {
+        delete parsed.cloudApiKey
+        localStorage.setItem(UI_OVERRIDES_KEY, JSON.stringify(parsed))
+      }
+
+      return parsed
     }
   } catch {
     // fallback
   }
+
   return {}
 }
 
@@ -188,9 +200,11 @@ export async function refreshEnvConfig(): Promise<Record<string, string>> {
 
   // 1. Try Electron preload system bridge
   const electronSystem = (window as unknown as { hermesDesktop?: { system?: { getEnvConfig?: () => Promise<Record<string, string>> } } }).hermesDesktop?.system
+
   if (electronSystem?.getEnvConfig) {
     try {
       const bridgeEnv = await electronSystem.getEnvConfig()
+
       if (bridgeEnv && typeof bridgeEnv === 'object') {
         envData = { ...envData, ...bridgeEnv }
       }
@@ -203,8 +217,10 @@ export async function refreshEnvConfig(): Promise<Record<string, string>> {
   if (Object.keys(envData).length === 0) {
     try {
       const res = await fetch('/api/env-config').catch(() => null)
+
       if (res && res.ok) {
         const json = await res.json()
+
         if (json && typeof json === 'object') {
           envData = { ...envData, ...json }
         }
@@ -217,20 +233,25 @@ export async function refreshEnvConfig(): Promise<Record<string, string>> {
   // 3. Fallback to Vite import.meta.env if available
   try {
     const metaEnv = (import.meta as any).env || {}
+
     for (const [k, v] of Object.entries(metaEnv)) {
       if (typeof v === 'string') {
         envData[k] = v
         const stripped = k.replace(/^VITE_/, '')
+
         if (!envData[stripped]) {
           envData[stripped] = v
         }
       }
     }
-  } catch {}
+  } catch {
+    // Environment IPC may be unavailable outside the packaged desktop.
+  }
 
   $envConfigMap.set(envData)
   const effective = computeEffectiveConfig(envData, $uiOverrides.get())
   $aiProviderConfig.set(effective)
+
   return envData
 }
 
@@ -246,7 +267,10 @@ export function setAiProviderConfig(update: Partial<AIProviderConfig>): void {
   $uiOverrides.set(nextOverrides)
 
   try {
-    localStorage.setItem(UI_OVERRIDES_KEY, JSON.stringify(nextOverrides))
+    // Keep secrets in memory for this session; never persist to browser storage.
+    const persistableOverrides = { ...nextOverrides }
+    delete persistableOverrides.cloudApiKey
+    localStorage.setItem(UI_OVERRIDES_KEY, JSON.stringify(persistableOverrides))
   } catch {
     // ignore
   }
@@ -261,7 +285,10 @@ export function setAiProviderConfig(update: Partial<AIProviderConfig>): void {
 export function resetAiProviderToEnv(): void {
   try {
     localStorage.removeItem(UI_OVERRIDES_KEY)
-  } catch {}
+  } catch {
+    // Browser storage is optional and may be disabled.
+  }
+
   $uiOverrides.set({})
   const effective = computeEffectiveConfig($envConfigMap.get(), {})
   $aiProviderConfig.set(effective)
@@ -272,6 +299,7 @@ export function resetAiProviderToEnv(): void {
  */
 export function isFieldOverridden(field: keyof AIProviderConfig): boolean {
   const overrides = $uiOverrides.get()
+
   return overrides[field] !== undefined
 }
 
@@ -296,6 +324,7 @@ async function callGeminiApi(
     clean(preferredModel || 'gemini-3.1-flash-lite'),
     'gemini-flash-latest'
   ]
+
   const uniqueCandidates = [...new Set(candidateModels)]
 
   let lastError = ''
@@ -303,6 +332,7 @@ async function callGeminiApi(
   for (const model of uniqueCandidates) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -323,7 +353,8 @@ async function callGeminiApi(
       if (res.ok) {
         const data = await res.json()
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text
-        if (text) return text
+
+        if (text) {return text}
       }
 
       const errJson = await res.json().catch(() => ({}))
@@ -333,6 +364,7 @@ async function callGeminiApi(
       // If error is 429 quota or 404 model not found, try the next model candidate
       if (res.status === 429 || res.status === 404 || errMsg.includes('Quota exceeded') || errMsg.includes('not found')) {
         console.warn(`[Gemini API] Model ${model} returned ${res.status} (${errMsg}). Falling back to next candidate...`)
+
         continue
       }
 
@@ -341,6 +373,7 @@ async function callGeminiApi(
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       lastError = msg
+
       if (msg.includes('API key not valid') || msg.includes('PERMISSION_DENIED')) {
         throw new Error(msg)
       }
@@ -359,7 +392,8 @@ export async function generateGeminiSpeechAudio(
 ): Promise<{ audioBase64: string; mimeType: string } | null> {
   const cfg = $aiProviderConfig.get()
   const apiKey = cfg.cloudApiKey
-  if (!apiKey) return null
+
+  if (!apiKey) {return null}
 
   // Strip code blocks and markdown symbols so the spoken audio sounds natural
   const cleanText = text
@@ -368,7 +402,7 @@ export async function generateGeminiSpeechAudio(
     .replace(/[*_#~]/g, '')
     .trim()
 
-  if (!cleanText) return null
+  if (!cleanText) {return null}
 
   // Normalize voice name to valid Gemini prebuilt voice
   const validGeminiVoices = ['Aoede', 'Charon', 'Fenrir', 'Kore', 'Puck']
@@ -381,11 +415,13 @@ export async function generateGeminiSpeechAudio(
     (cfg.geminiTtsModel || 'gemini-3.8-flash-lite-tts').replace(/^models\//, ''),
     'gemini-3.8-flash-tts'
   ]
+
   const uniqueModels = [...new Set(candidateTtsModels)]
 
   for (const model of uniqueModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -407,6 +443,7 @@ export async function generateGeminiSpeechAudio(
       if (res.ok) {
         const data = await res.json()
         const part = data.candidates?.[0]?.content?.parts?.[0]
+
         if (part?.inlineData?.data) {
           return {
             audioBase64: part.inlineData.data,
@@ -447,6 +484,7 @@ export async function processAudioQueryWithGemini(
     (cfg.cloudModel || 'gemini-3.1-flash-lite').replace(/^models\//, ''),
     'gemini-flash-latest'
   ]
+
   const uniqueModels = [...new Set(candidateModels)]
 
   const promptInstruction = `You are Hermes Voice AI OS, an advanced hands-free desktop AI operating system.
@@ -458,6 +496,7 @@ REPLY: <concise, friendly spoken answer or action execution>`
   for (const model of uniqueModels) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -492,11 +531,13 @@ REPLY: <concise, friendly spoken answer or action execution>`
         let replyText = rawText
 
         const transcriptMatch = rawText.match(/TRANSCRIPT:\s*"([^"]+)"/i) || rawText.match(/TRANSCRIPT:\s*(.+?)(?=\nREPLY:|$)/is)
+
         if (transcriptMatch) {
           userTranscript = transcriptMatch[1].trim()
         }
 
         const replyMatch = rawText.match(/REPLY:\s*([\s\S]+)/i)
+
         if (replyMatch) {
           replyText = replyMatch[1].trim()
         } else if (userTranscript) {
@@ -532,6 +573,7 @@ export async function executeAiCompletion(
   // 1. Offline Mode (Local Ollama / llama.cpp)
   if (cfg.mode === 'offline') {
     const endpoint = (cfg.offlineEndpoint || 'http://localhost:11434').replace(/\/+$/, '')
+
     try {
       const res = await fetch(`${endpoint}/api/generate`, {
         method: 'POST',
@@ -542,13 +584,17 @@ export async function executeAiCompletion(
           stream: false
         })
       })
+
       if (!res.ok) {
         throw new Error(`Local model endpoint returned HTTP ${res.status}`)
       }
+
       const data = await res.json()
+
       return data.response || 'No response returned from local model.'
     } catch (err) {
       console.warn('[AI] Local offline endpoint connection failed:', err)
+
       return `Offline Model Notice: Could not connect to local Ollama at ${endpoint}. Make sure Ollama is running ('ollama run ${cfg.offlineModel}') or switch to Gemini in Settings.`
     }
   }
@@ -587,11 +633,14 @@ export async function executeAiCompletion(
           max_tokens: 600
         })
       })
+
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}))
         throw new Error(errJson.error?.message || `Groq API HTTP ${res.status}`)
       }
+
       const data = await res.json()
+
       return data.choices?.[0]?.message?.content || 'No response from Groq.'
     }
 
@@ -613,11 +662,14 @@ export async function executeAiCompletion(
           max_tokens: 600
         })
       })
+
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}))
         throw new Error(errJson.error?.message || `OpenAI API HTTP ${res.status}`)
       }
+
       const data = await res.json()
+
       return data.choices?.[0]?.message?.content || 'No response from OpenAI.'
     }
 
@@ -639,17 +691,21 @@ export async function executeAiCompletion(
           ]
         })
       })
+
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}))
         throw new Error(errJson.error?.message || `OpenRouter API HTTP ${res.status}`)
       }
+
       const data = await res.json()
+
       return data.choices?.[0]?.message?.content || 'No response from OpenRouter.'
     }
 
     // 2e. Nous Research (Hermes 3 Architecture)
     if (cfg.cloudProvider === 'nous') {
       const endpoint = 'https://api.nousresearch.com/v1/chat/completions'
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -666,11 +722,14 @@ export async function executeAiCompletion(
           max_tokens: 600
         })
       })
+
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}))
         throw new Error(errJson.error?.message || `Nous Research API HTTP ${res.status}`)
       }
+
       const data = await res.json()
+
       return data.choices?.[0]?.message?.content || 'No response from Nous Research model.'
     }
 
@@ -689,14 +748,18 @@ export async function executeAiCompletion(
         ]
       })
     })
+
     if (!res.ok) {
       const errJson = await res.json().catch(() => ({}))
       throw new Error(errJson.error?.message || `Provider API HTTP ${res.status}`)
     }
+
     const data = await res.json()
+
     return data.choices?.[0]?.message?.content || 'No response from model.'
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
+
     return `AI Request Error: ${msg}. Check your .env or Settings modal.`
   }
 }
@@ -740,6 +803,7 @@ export function selectDynamicModelForTask(options: {
         reason: '100% Free local offline model (zero API spend)'
       }
     }
+
     return {
       model: cfg.tier1FreeModel || 'gemini-3.1-flash-lite',
       provider: cfg.cloudProvider,
@@ -790,11 +854,18 @@ export function selectDynamicModelForTask(options: {
 
 function detectProviderForModel(modelName: string, fallback: CloudProvider): CloudProvider {
   const m = modelName.toLowerCase()
-  if (m.includes('hermes') || m.includes('nous')) return 'nous'
-  if (m.includes('gemini')) return 'gemini'
-  if (m.includes('gpt') || m.includes('o1') || m.includes('o3')) return 'openai'
-  if (m.includes('claude')) return 'anthropic'
-  if (m.includes('deepseek')) return 'deepseek'
-  if (m.includes('groq')) return 'groq'
+
+  if (m.includes('hermes') || m.includes('nous')) {return 'nous'}
+
+  if (m.includes('gemini')) {return 'gemini'}
+
+  if (m.includes('gpt') || m.includes('o1') || m.includes('o3')) {return 'openai'}
+
+  if (m.includes('claude')) {return 'anthropic'}
+
+  if (m.includes('deepseek')) {return 'deepseek'}
+
+  if (m.includes('groq')) {return 'groq'}
+
   return fallback
 }

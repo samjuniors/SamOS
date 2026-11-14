@@ -1,8 +1,8 @@
 import { atom } from 'nanostores'
+
 import { $aiProviderConfig } from './ai-provider-config'
-import { $cuaActive, seedDemoCuaElementsIfEmpty } from './cua-state'
+import { seedDemoCuaElementsIfEmpty } from './cua-state'
 import {
-  $handsfreeActive,
   $micPermissionStatus,
   $voiceState,
   interruptVoice,
@@ -10,7 +10,7 @@ import {
   startHandsfreeAudio
 } from './voice-state'
 
-export type SubsystemHealthStatus = 'healthy' | 'degraded' | 'repaired' | 'failed'
+export type SubsystemHealthStatus = 'not_checked' | 'healthy' | 'degraded' | 'repaired' | 'failed'
 
 export interface SubsystemCheck {
   id: string
@@ -31,7 +31,7 @@ export interface SelfRepairLogEntry {
 
 export interface SystemHealthState {
   healthScore: number // 0-100%
-  overallStatus: 'NOMINAL' | 'SELF_HEALING' | 'ATTENTION_REQUIRED'
+  overallStatus: 'NOT_CHECKED' | 'NOMINAL' | 'SELF_HEALING' | 'ATTENTION_REQUIRED'
   isScanning: boolean
   lastScanTime: number | null
   checks: SubsystemCheck[]
@@ -43,56 +43,56 @@ const INITIAL_CHECKS: SubsystemCheck[] = [
     id: 'audio_pipeline',
     name: 'Voice Engine & Microphone VAD',
     category: 'audio',
-    status: 'healthy',
-    message: 'Continuous 16kHz PCM duplex stream standby with dynamic noise floor tracking',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   },
   {
     id: 'ai_brain_quota',
     name: 'AI Brain Connectivity & Quota Gate',
     category: 'ai_brain',
-    status: 'healthy',
-    message: 'Google Gemini 3.1 Live/Flash pipeline active with fallback redundancy',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   },
   {
     id: 'ipc_desktop_bridge',
     name: 'IPC Desktop CUA Driver',
     category: 'ipc_bridge',
-    status: 'healthy',
-    message: 'Native Windows automation channels (spawn, typeText, popup) bound',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   },
   {
     id: 'memory_watchdog',
     name: 'Memory & Turn Lock Watchdog',
     category: 'memory',
-    status: 'healthy',
-    message: 'Zero hung speech buffers; turn state machine operating nominal',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   },
   {
     id: 'workspace_sandboxes',
     name: 'Workspace Sandboxes & Storage Integrity',
     category: 'workspace',
-    status: 'healthy',
-    message: 'Sandbox directories and profile settings synchronized with .env',
-    lastChecked: Date.now()
+    status: 'not_checked',
+    message: 'Not checked yet; run diagnostics to obtain a basic status.',
+    lastChecked: 0
   }
 ]
 
 export const $systemHealth = atom<SystemHealthState>({
-  healthScore: 100,
-  overallStatus: 'NOMINAL',
+  healthScore: 0,
+  overallStatus: 'NOT_CHECKED',
   isScanning: false,
-  lastScanTime: Date.now(),
+  lastScanTime: null,
   checks: INITIAL_CHECKS,
   logs: [
     {
       id: `log_${Date.now()}`,
       timestamp: Date.now(),
       level: 'info',
-      message: 'Agentic Self-Repair Engine initialized in standby sentinel mode.'
+      message: 'Not checked yet; run diagnostics to obtain a basic status.'
     }
   ]
 })
@@ -121,6 +121,7 @@ export async function runAutonomousSelfRepair(): Promise<{
   $systemHealth.set({ ...current, isScanning: true, overallStatus: 'SELF_HEALING' })
 
   const updatedChecks: SubsystemCheck[] = []
+
   const newLogs: SelfRepairLogEntry[] = [
     {
       id: `log_${Date.now()}_start`,
@@ -129,13 +130,16 @@ export async function runAutonomousSelfRepair(): Promise<{
       message: '⚡ Founder requested diagnostic scan. Initiating autonomous full-stack verification...'
     }
   ]
+
   let repairedCount = 0
 
   // ── 1. Audio Engine Diagnostic & Auto-Heal ─────────────────────────────────
   let audioStatus: SubsystemHealthStatus = 'healthy'
   let audioMsg = 'Microphone duplex stream active, dynamic ambient noise floor baseline calibrated.'
+
   try {
     const micPerm = $micPermissionStatus.get()
+
     if (micPerm === 'denied') {
       audioStatus = 'degraded'
       audioMsg = 'Microphone permission currently denied or blocked by system.'
@@ -167,6 +171,7 @@ export async function runAutonomousSelfRepair(): Promise<{
       message: `Audio pipeline anomaly intercepted and auto-healed.`
     })
   }
+
   updatedChecks.push({
     id: 'audio_pipeline',
     name: 'Voice Engine & Microphone VAD',
@@ -180,6 +185,7 @@ export async function runAutonomousSelfRepair(): Promise<{
   let aiStatus: SubsystemHealthStatus = 'healthy'
   let aiMsg = 'Cloud model connectivity verified; API key and TTS engine nominal.'
   const aiConfig = $aiProviderConfig.get()
+
   if (aiConfig.mode === 'cloud' && !aiConfig.cloudApiKey) {
     aiStatus = 'degraded'
     aiMsg = 'Cloud API key missing. Switched to offline contingency routing.'
@@ -210,6 +216,7 @@ export async function runAutonomousSelfRepair(): Promise<{
       })
     }
   }
+
   updatedChecks.push({
     id: 'ai_brain_quota',
     name: 'AI Brain Connectivity & Quota Gate',
@@ -223,6 +230,7 @@ export async function runAutonomousSelfRepair(): Promise<{
   let ipcStatus: SubsystemHealthStatus = 'healthy'
   let ipcMsg = 'Desktop CUA driver active: 9 typed IPC automation methods verified.'
   const cuaApi = (window as unknown as { hermesDesktop?: { cua?: Record<string, unknown> } }).hermesDesktop?.cua
+
   if (!cuaApi) {
     ipcStatus = 'degraded'
     ipcMsg = 'IPC desktop bridge is operating in browser simulation fallback mode.'
@@ -241,6 +249,7 @@ export async function runAutonomousSelfRepair(): Promise<{
       message: 'CUA desktop automation driver verified: launchApp, typeText, and popup operational.'
     })
   }
+
   updatedChecks.push({
     id: 'ipc_desktop_bridge',
     name: 'IPC Desktop CUA Driver',
@@ -254,6 +263,7 @@ export async function runAutonomousSelfRepair(): Promise<{
   let memStatus: SubsystemHealthStatus = 'healthy'
   let memMsg = 'Zero turn deadlocks; audio memory buffers purged.'
   const curVoiceState = $voiceState.get()
+
   // If voice state was hung in THINKING or SPEAKING with no active audio, self-repair to IDLE
   if (curVoiceState === 'THINKING' || curVoiceState === 'SPEAKING') {
     void interruptVoice()
@@ -275,6 +285,7 @@ export async function runAutonomousSelfRepair(): Promise<{
       message: 'Turn watchdog nominal: State machine responsive in standby.'
     })
   }
+
   updatedChecks.push({
     id: 'memory_watchdog',
     name: 'Memory & Turn Lock Watchdog',
@@ -322,6 +333,7 @@ export async function runAutonomousSelfRepair(): Promise<{
 
   // Formulate natural spoken feedback for the founder
   let narration = `Diagnostics complete. All systems are operating at ${healthScore} percent nominal health.`
+
   if (repairedCount > 0) {
     narration = `Founder diagnostics complete. Scanned audio, AI brain, IPC desktop bridge, and memory. Auto-repaired ${repairedCount} subsystem anomaly. System health is now ${healthScore} percent nominal and ready.`
   }

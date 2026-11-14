@@ -1,38 +1,33 @@
+import './voice-ai-os.css'
+
 import { useStore } from '@nanostores/react'
 import {
-  Activity,
   Bot,
   Building,
   Cloud,
-  Command,
   Cpu,
   FolderTree,
   Globe,
   HardDrive,
   Layout,
-  Maximize2,
   Mic,
   Minimize2,
   Monitor,
-  Radio,
   Send,
   Server,
   Settings,
-  ShieldAlert,
   Sparkles,
   Terminal,
-  Volume2,
   Wrench,
   Zap
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { $aiProviderConfig } from '@/store/ai-provider-config'
-import { $cuaActive, initCuaIpc } from '@/store/cua-state'
-import { $aiEmployees, initSubagentTelemetryIpc } from '@/store/subagent-telemetry'
-import { $activeWorkspaceTab, setActiveWorkspaceTab } from '@/store/workspace-tab-state'
-import { $systemHealth, openSelfRepairModal } from '@/store/self-repair-engine'
 import { $companyTasks } from '@/store/company-state'
+import { $cuaActive, initCuaIpc } from '@/store/cua-state'
+import { $systemHealth, openSelfRepairModal } from '@/store/self-repair-engine'
+import { $aiEmployees, initSubagentTelemetryIpc } from '@/store/subagent-telemetry'
 import {
   $micPermissionStatus,
   $voiceRmsLevel,
@@ -44,6 +39,7 @@ import {
   setVoiceState,
   toggleHandsfreeRecordingTurn
 } from '@/store/voice-state'
+import { $activeWorkspaceTab, setActiveWorkspaceTab } from '@/store/workspace-tab-state'
 
 import { AIEmployeesGrid } from './ai-employees-grid'
 import { AiProviderSettingsModal } from './ai-provider-settings-modal'
@@ -54,7 +50,6 @@ import { CuaActionOverlay } from './cua-action-overlay'
 import { SelfRepairModal } from './self-repair-modal'
 import type { ShellWindowMode } from './types'
 import { VoiceHudOrb } from './voice-hud-orb'
-import './voice-ai-os.css'
 
 interface VoiceAiOsRootProps {
   initialMode?: ShellWindowMode
@@ -108,6 +103,7 @@ export function VoiceAiOsRoot({
     }
 
     window.addEventListener('keydown', handleGlobalShortcuts)
+
     return () => window.removeEventListener('keydown', handleGlobalShortcuts)
   }, [voiceState])
 
@@ -117,9 +113,9 @@ export function VoiceAiOsRoot({
 
   return (
     <div
+      aria-label="Hermes Voice AI Operating System Shell"
       className={`voice-ai-os-shell flex flex-col w-screen h-screen bg-[#0c0e12] text-slate-100 overflow-hidden relative select-none font-sans ${className}`}
       role="application"
-      aria-label="Hermes Voice AI Operating System Shell"
     >
       {/* Background Ambient Industrial Glow (Matte Black 60%, Storm Grey 30%, Safety Orange 10%) */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-25">
@@ -145,13 +141,13 @@ export function VoiceAiOsRoot({
 
           {/* Autonomous Self-Repair Sentinel Pill */}
           <button
-            type="button"
-            onClick={openSelfRepairModal}
+            aria-label="Autonomous Self-Repair Sentinel - Click to inspect or run full system diagnostics"
             className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1b202a] hover:bg-[#262c37] border border-[#ff6a00]/40 text-[11px] font-mono text-[#ff7f24] transition-all cursor-pointer shadow-sm shadow-[#ff6a00]/15"
-            title="Autonomous Self-Repair Sentinel - Click to inspect or run full system diagnostics"
+            onClick={openSelfRepairModal}
+            type="button"
           >
             <Wrench className="size-3 text-[#ff6a00] animate-pulse" />
-            <span>Self-Repair: {systemHealth.healthScore}%</span>
+            <span>{systemHealth.lastScanTime === null ? 'Health: Not checked' : `Basic checks: ${systemHealth.healthScore}%`}</span>
           </button>
 
           <div className="h-4 w-[1px] bg-[#262c37]" />
@@ -165,10 +161,10 @@ export function VoiceAiOsRoot({
 
           {/* AI Engine Provider Pill */}
           <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
+            aria-label="Configure AI Engine & API Keys (Cloud / Offline)"
             className="hidden md:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1b202a] hover:bg-[#262c37] border border-[#262c37] text-[11px] font-mono text-[#9aa5b8] hover:text-white transition-colors cursor-pointer"
-            title="Configure AI Engine & API Keys (Cloud / Offline)"
+            onClick={() => setSettingsOpen(true)}
+            type="button"
           >
             {aiConfig.mode === 'offline' ? (
               <>
@@ -213,43 +209,40 @@ export function VoiceAiOsRoot({
           {/* Window Mode Switcher */}
           <div className="flex items-center p-0.5 rounded-xl bg-black/40 border border-white/10 text-xs">
             <button
-              type="button"
-              onClick={() => setWindowMode('hud')}
+              aria-label="HUD Mode"
               className={`px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 ${
                 windowMode === 'hud'
                   ? 'bg-white/20 text-white font-medium'
                   : 'text-slate-400 hover:text-white'
               }`}
-              title="Switch to compact floating HUD mode"
-              aria-label="HUD Mode"
+              onClick={() => setWindowMode('hud')}
+              type="button"
             >
               <Minimize2 className="size-3" />
               <span className="hidden sm:inline">HUD</span>
             </button>
             <button
-              type="button"
-              onClick={() => setWindowMode('canvas')}
+              aria-label="Canvas Workspace Mode"
               className={`px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 ${
                 windowMode === 'canvas'
                   ? 'bg-white/20 text-white font-medium'
                   : 'text-slate-400 hover:text-white'
               }`}
-              title="Switch to full desktop productivity canvas"
-              aria-label="Canvas Workspace Mode"
+              onClick={() => setWindowMode('canvas')}
+              type="button"
             >
               <Layout className="size-3" />
               <span className="hidden sm:inline">Canvas</span>
             </button>
             <button
-              type="button"
-              onClick={() => setWindowMode('cua_overlay')}
+              aria-label="CUA Overlay Mode"
               className={`px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 ${
                 windowMode === 'cua_overlay'
                   ? 'bg-amber-500/20 text-amber-300 font-medium border border-amber-500/30'
                   : 'text-slate-400 hover:text-white'
               }`}
-              title="Switch to CUA Set-of-Marks Overlay mode"
-              aria-label="CUA Overlay Mode"
+              onClick={() => setWindowMode('cua_overlay')}
+              type="button"
             >
               <Monitor className="size-3" />
               <span className="hidden sm:inline">CUA</span>
@@ -258,11 +251,10 @@ export function VoiceAiOsRoot({
 
           {/* Settings Trigger */}
           <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
-            title="AI Provider Settings (Cloud API Key / Offline Ollama)"
             aria-label="Settings"
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            onClick={() => setSettingsOpen(true)}
+            type="button"
           >
             <Settings className="size-3.5" />
           </button>
@@ -287,9 +279,9 @@ export function VoiceAiOsRoot({
             </span>
           </div>
           <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
             className="px-3 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs transition-colors shrink-0 ml-3 shadow-md cursor-pointer"
+            onClick={() => setSettingsOpen(true)}
+            type="button"
           >
             Configure Provider
           </button>
@@ -304,11 +296,11 @@ export function VoiceAiOsRoot({
             <span>Hands-Free Mic Standby: Click button to activate microphone in browser/desktop.</span>
           </div>
           <button
-            type="button"
+            className="px-2.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs shrink-0 ml-3 font-medium cursor-pointer"
             onClick={async () => {
               await requestMicrophonePermission()
             }}
-            className="px-2.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs shrink-0 ml-3 font-medium cursor-pointer"
+            type="button"
           >
             🎙️ Activate Microphone
           </button>
@@ -329,9 +321,9 @@ export function VoiceAiOsRoot({
                 workspace canvas anytime.
               </p>
               <button
-                type="button"
-                onClick={() => setWindowMode('canvas')}
                 className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-medium text-white transition-colors border border-white/10"
+                onClick={() => setWindowMode('canvas')}
+                type="button"
               >
                 Expand Workspace Canvas
               </button>
@@ -344,13 +336,13 @@ export function VoiceAiOsRoot({
             <div className="flex items-center justify-between px-6 pt-3 pb-2 border-b border-[#262c37] shrink-0 bg-[#101318]/90">
               <div className="flex items-center gap-2">
                 <button
-                  type="button"
-                  onClick={() => setActiveWorkspaceTab('company')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     activeTab === 'company'
                       ? 'bg-[#ff6a00]/15 text-[#ff7f24] border border-[#ff6a00]/50 shadow-sm shadow-[#ff6a00]/20'
                       : 'text-[#9aa5b8] hover:text-slate-100 hover:bg-[#1b202a]'
                   }`}
+                  onClick={() => setActiveWorkspaceTab('company')}
+                  type="button"
                 >
                   <Building className="size-3.5 text-[#ff6a00]" />
                   <span>Company & Org</span>
@@ -360,52 +352,52 @@ export function VoiceAiOsRoot({
                 </button>
 
                 <button
-                  type="button"
-                  onClick={() => setActiveWorkspaceTab('employees')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     activeTab === 'employees'
                       ? 'bg-[#ff6a00]/15 text-[#ff7f24] border border-[#ff6a00]/50 shadow-sm shadow-[#ff6a00]/20'
                       : 'text-[#9aa5b8] hover:text-slate-100 hover:bg-[#1b202a]'
                   }`}
+                  onClick={() => setActiveWorkspaceTab('employees')}
+                  type="button"
                 >
                   <Bot className="size-3.5 text-[#ff6a00]" />
                   <span>AI Employees ({employees.length})</span>
                 </button>
 
                 <button
-                  type="button"
-                  onClick={() => setActiveWorkspaceTab('canvas')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     activeTab === 'canvas'
                       ? 'bg-[#ff6a00]/15 text-[#ff7f24] border border-[#ff6a00]/50 shadow-sm shadow-[#ff6a00]/20'
                       : 'text-[#9aa5b8] hover:text-slate-100 hover:bg-[#1b202a]'
                   }`}
+                  onClick={() => setActiveWorkspaceTab('canvas')}
+                  type="button"
                 >
                   <Terminal className="size-3.5 text-[#ff7f24]" />
                   <span>Workspace Canvas</span>
                 </button>
 
                 <button
-                  type="button"
-                  onClick={() => setActiveWorkspaceTab('browser')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     activeTab === 'browser'
                       ? 'bg-[#ff6a00]/15 text-[#ff7f24] border border-[#ff6a00]/50 shadow-sm shadow-[#ff6a00]/20'
                       : 'text-[#9aa5b8] hover:text-slate-100 hover:bg-[#1b202a]'
                   }`}
+                  onClick={() => setActiveWorkspaceTab('browser')}
+                  type="button"
                 >
                   <Globe className="size-3.5 text-[#ff6a00]" />
                   <span>Browser Workspace</span>
                 </button>
 
                 <button
-                  type="button"
-                  onClick={() => setActiveWorkspaceTab('cua')}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                     activeTab === 'cua'
                       ? 'bg-[#ff6a00]/15 text-[#ff7f24] border border-[#ff6a00]/50 shadow-sm shadow-[#ff6a00]/20'
                       : 'text-[#9aa5b8] hover:text-slate-100 hover:bg-[#1b202a]'
                   }`}
+                  onClick={() => setActiveWorkspaceTab('cua')}
+                  type="button"
                 >
                   <Monitor className="size-3.5 text-[#ff5500]" />
                   <span>CUA Automation (PC Access)</span>
@@ -487,27 +479,25 @@ export function VoiceAiOsRoot({
       <footer className="voice-os-glass px-4 py-2 border-t border-[#262c37] shrink-0 flex items-center gap-3 bg-[#101318]/90">
         <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#090b0e] border border-[#262c37] focus-within:border-[#ff6a00] transition-colors">
           <button
-            type="button"
+            aria-label="Toggle Microphone"
+            className={`p-1 rounded-lg transition-colors cursor-pointer ${
+              voiceState === 'LISTENING' ? 'text-[#ff6a00] bg-[#ff6a00]/20 animate-pulse' : 'text-[#9aa5b8] hover:text-white'
+            }`}
             onClick={async () => {
               await requestMicrophonePermission()
+
               if (voiceState === 'SPEAKING' || voiceState === 'THINKING') {
                 void interruptVoice()
               } else {
                 toggleHandsfreeRecordingTurn()
               }
             }}
-            className={`p-1 rounded-lg transition-colors cursor-pointer ${
-              voiceState === 'LISTENING' ? 'text-[#ff6a00] bg-[#ff6a00]/20 animate-pulse' : 'text-[#9aa5b8] hover:text-white'
-            }`}
-            title="Toggle Mic / Speak Hands-free"
-            aria-label="Toggle Microphone"
+            type="button"
           >
             <Mic className="size-4" />
           </button>
           <input
-            type="text"
-            placeholder="Speak hands-free or type a command (e.g. 'check for issues and fix them', 'open notepad', 'open youtube', 'open calculator')..."
-            value={textInput}
+            className="flex-1 bg-transparent border-none text-xs text-slate-100 placeholder:text-[#9aa5b8]/60 focus:outline-none font-sans"
             onChange={e => setTextInput(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter' && textInput.trim()) {
@@ -516,10 +506,13 @@ export function VoiceAiOsRoot({
                 void handleSpokenCommand(cmd)
               }
             }}
-            className="flex-1 bg-transparent border-none text-xs text-slate-100 placeholder:text-[#9aa5b8]/60 focus:outline-none font-sans"
+            placeholder="Speak hands-free or type a command (e.g. 'check for issues and fix them', 'open notepad', 'open youtube', 'open calculator')..."
+            type="text"
+            value={textInput}
           />
           <button
-            type="button"
+            aria-label="Execute command"
+            className="p-1 rounded-lg hover:bg-[#262c37] text-[#9aa5b8] hover:text-[#ff6a00] transition-colors cursor-pointer"
             onClick={() => {
               if (textInput.trim()) {
                 const cmd = textInput.trim()
@@ -527,9 +520,7 @@ export function VoiceAiOsRoot({
                 void handleSpokenCommand(cmd)
               }
             }}
-            className="p-1 rounded-lg hover:bg-[#262c37] text-[#9aa5b8] hover:text-[#ff6a00] transition-colors cursor-pointer"
-            title="Execute command"
-            aria-label="Execute command"
+            type="button"
           >
             <Send className="size-3.5" />
           </button>
@@ -537,19 +528,19 @@ export function VoiceAiOsRoot({
 
         <div className="flex items-center gap-2 text-[11px] font-mono text-[#9aa5b8] shrink-0">
           <button
-            type="button"
-            onClick={openSelfRepairModal}
+            aria-label="Autonomous Self-Repair Sentinel"
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1b202a] hover:bg-[#262c37] border border-[#262c37] hover:border-[#ff6a00]/40 text-[#ff7f24] transition-colors cursor-pointer"
-            title="Autonomous Self-Repair Sentinel"
+            onClick={openSelfRepairModal}
+            type="button"
           >
             <Wrench className="size-3 text-[#ff6a00]" />
             <span>Self-Repair</span>
           </button>
 
           <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
             className="hover:text-slate-100 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#1b202a] hover:bg-[#262c37] border border-[#262c37] transition-colors cursor-pointer"
+            onClick={() => setSettingsOpen(true)}
+            type="button"
           >
             {aiConfig.mode === 'offline' ? (
               <span className="text-emerald-400 font-semibold">● Offline</span>

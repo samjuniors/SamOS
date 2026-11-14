@@ -108,25 +108,35 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     onStateChanged: (callback: (state: string) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, state: string) => callback(state)
       ipcRenderer.on('hermes:voice:stateChanged', listener)
+
       return () => ipcRenderer.removeListener('hermes:voice:stateChanged', listener)
     },
     onWakeWord: (callback: (event: unknown) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: unknown) => callback(payload)
       ipcRenderer.on('hermes:voice:wakeWord', listener)
+
       return () => ipcRenderer.removeListener('hermes:voice:wakeWord', listener)
     },
     onAudioStream: (callback: (chunk: unknown) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, chunk: unknown) => callback(chunk)
       ipcRenderer.on('hermes:voice:audioStream', listener)
+
       return () => ipcRenderer.removeListener('hermes:voice:audioStream', listener)
     },
     onTranscript: (callback: (transcript: unknown) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, transcript: unknown) => callback(transcript)
       ipcRenderer.on('hermes:voice:transcript', listener)
+
       return () => ipcRenderer.removeListener('hermes:voice:transcript', listener)
     },
     playTtsChunk: (chunk: unknown) => ipcRenderer.invoke('hermes:voice:playTtsChunk', chunk),
-    interrupt: () => ipcRenderer.invoke('hermes:voice:interrupt')
+    interrupt: () => ipcRenderer.invoke('hermes:voice:interrupt'),
+    onInterrupted: (callback: () => void) => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:voice:interrupt', listener)
+
+      return () => ipcRenderer.removeListener('hermes:voice:interrupt', listener)
+    }
   },
   // ── Computer Use Agent (CUA) Desktop Automation (VOICE_AI_OS_SPEC §4.3) ──
   cua: {
@@ -139,21 +149,25 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     onCapture: (callback: (payload: any) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: any) => callback(payload)
       ipcRenderer.on('hermes:cua:capture', listener)
+
       return () => ipcRenderer.removeListener('hermes:cua:capture', listener)
     },
     onActionStart: (callback: (payload: any) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: any) => callback(payload)
       ipcRenderer.on('hermes:cua:actionStart', listener)
+
       return () => ipcRenderer.removeListener('hermes:cua:actionStart', listener)
     },
     onActionEnd: (callback: (payload: any) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: any) => callback(payload)
       ipcRenderer.on('hermes:cua:actionEnd', listener)
+
       return () => ipcRenderer.removeListener('hermes:cua:actionEnd', listener)
     },
     onAborted: (callback: (payload: any) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: any) => callback(payload)
       ipcRenderer.on('hermes:cua:aborted', listener)
+
       return () => ipcRenderer.removeListener('hermes:cua:aborted', listener)
     }
   },
@@ -167,6 +181,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     onWindowModeChanged: (callback: (mode: string) => void) => {
       const listener = (_event: Electron.IpcRendererEvent, mode: string) => callback(mode)
       ipcRenderer.on('hermes:system:windowModeChanged', listener)
+
       return () => ipcRenderer.removeListener('hermes:system:windowModeChanged', listener)
     }
   },

@@ -37,6 +37,8 @@
     "pack": "pnpm run build && pnpm run builder --dir --publish never",
     "dist": "pnpm run build && pnpm run builder",
     "payload": "node ../../scripts/build/python.mjs ../../scripts/bundles/stage.py --out build/agent-payload",
+    "payload:samos": "node ../../scripts/build/python.mjs ../../scripts/bundles/stage.py --frontend-profile electron-only --out build/agent-payload",
+    "pack:samos:unpacked": "pnpm run payload:samos && cross-env HERMES_DESKTOP_VARIANT=bundled pnpm run build && cross-env HERMES_DESKTOP_VARIANT=bundled pnpm run builder --dir --publish never --win --x64",
     "dist:bundled": "pnpm run payload && cross-env HERMES_DESKTOP_VARIANT=bundled pnpm run dist",
     "dist:mac": "pnpm run build && pnpm run builder --mac",
     "dist:mac:dmg": "pnpm run build && pnpm run builder --mac dmg",

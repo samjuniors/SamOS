@@ -1,23 +1,19 @@
+import './voice-ai-os.css'
+
 import { useStore } from '@nanostores/react'
 import {
   AlertCircle,
   Bot,
   CheckCircle2,
-  Clock,
-  Coins,
   Compass,
   Copy,
-  ExternalLink,
-  FileCode,
   Folder,
   Layers,
   Pause,
   Play,
-  RotateCcw,
   Search,
   Send,
   Square,
-  Terminal,
   Users,
   Wrench,
   X
@@ -28,17 +24,14 @@ import {
   $aiEmployees,
   $concurrencyLimit,
   $selectedEmployeeId,
-  controlSubagent,
   pauseSubagent,
   resumeSubagent,
-  seedDemoAIEmployeesIfEmpty,
   steerSubagent,
   stopSubagent,
   upsertAIEmployee
 } from '@/store/subagent-telemetry'
 
-import type { AIEmployee, SubagentStatus } from './types'
-import './voice-ai-os.css'
+import type { AIEmployee } from './types'
 
 interface AIEmployeesGridProps {
   className?: string
@@ -55,10 +48,7 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
   const [steeringText, setSteeringText] = useState<string>('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  // Seed initial demo employees if store is empty
-  useMemo(() => {
-    seedDemoAIEmployeesIfEmpty()
-  }, [])
+  // Live agent telemetry begins empty; demo workers require explicit developer action.
 
   // Filter and search computation
   const filteredEmployees = useMemo(() => {
@@ -66,8 +56,10 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
       if (filterStatus !== 'all' && emp.status !== filterStatus) {
         return false
       }
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase()
+
         return (
           emp.goal.toLowerCase().includes(q) ||
           emp.id.toLowerCase().includes(q) ||
@@ -75,6 +67,7 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
           emp.model.toLowerCase().includes(q)
         )
       }
+
       return true
     })
   }, [employees, filterStatus, searchQuery])
@@ -93,7 +86,7 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
 
   // Handle steering submission
   const handleSteerSubmit = async (subagentId: string) => {
-    if (!steeringText.trim()) return
+    if (!steeringText.trim()) {return}
     await steerSubagent(subagentId, steeringText.trim())
     setSteeringText('')
     setSteeringTargetId(null)
@@ -120,9 +113,9 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
 
   return (
     <div
+      aria-label="AI Employees Multi-Agent Dashboard"
       className={`ai-employees-container flex flex-col w-full h-full p-4 md:p-6 overflow-hidden ${className}`}
       role="region"
-      aria-label="AI Employees Multi-Agent Dashboard"
     >
       {/* Top Telemetry Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/10 shrink-0">
@@ -155,14 +148,17 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSpawnDemoEmployee}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors shadow-lg shadow-cyan-500/20"
-          >
-            <Bot className="size-3.5" />
-            <span>+ Delegate Task</span>
-          </button>
+          {import.meta.env.DEV && (
+            <button
+              aria-label="Create a local sample only; no actual agent execution"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors"
+              onClick={handleSpawnDemoEmployee}
+              type="button"
+            >
+              <Bot className="size-3.5" />
+              <span>+ Demo Worker</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -171,14 +167,14 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
         <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
           {(['all', 'running', 'completed', 'interrupted', 'failed'] as const).map(status => (
             <button
-              key={status}
-              type="button"
-              onClick={() => setFilterStatus(status)}
               className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-all whitespace-nowrap ${
                 filterStatus === status
                   ? 'bg-white/15 text-white shadow-sm border border-white/10'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              type="button"
             >
               {status}
               {status === 'running' && runningCount > 0 && (
@@ -194,11 +190,11 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
           <input
-            type="text"
-            placeholder="Search goal, tool or ID..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-black/20 border border-white/10 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search goal, tool or ID..."
+            type="text"
+            value={searchQuery}
           />
         </div>
       </div>
@@ -213,31 +209,33 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
               Speak a multi-step task like "Refactor the audio player and run tests" to spawn
               autonomous subagents.
             </p>
-            <button
-              type="button"
-              onClick={handleSpawnDemoEmployee}
-              className="mt-4 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs text-white"
-            >
-              Spawn Test Subagent
-            </button>
+            {import.meta.env.DEV && (
+              <button
+                className="mt-4 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs text-white"
+                onClick={handleSpawnDemoEmployee}
+                type="button"
+              >
+                Add sample worker (does not run)
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6">
             {filteredEmployees.map(emp => (
               <EmployeeCard
-                key={emp.id}
+                copiedId={copiedId}
                 employee={emp}
                 isSteering={steeringTargetId === emp.id}
-                steeringText={steeringText}
-                copiedId={copiedId}
+                key={emp.id}
+                onCloseSteer={() => setSteeringTargetId(null)}
+                onCopyPath={() => handleCopyPath(emp.sandboxPath, emp.id)}
                 onOpenSteer={() => {
                   setSteeringTargetId(emp.id)
                   setSteeringText('')
                 }}
-                onCloseSteer={() => setSteeringTargetId(null)}
                 onSteeringTextChange={setSteeringText}
                 onSubmitSteer={() => handleSteerSubmit(emp.id)}
-                onCopyPath={() => handleCopyPath(emp.sandboxPath, emp.id)}
+                steeringText={steeringText}
               />
             ))}
           </div>
@@ -284,6 +282,7 @@ function EmployeeCard({
         </span>
       )
     }
+
     if (isCompleted) {
       return (
         <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
@@ -292,6 +291,7 @@ function EmployeeCard({
         </span>
       )
     }
+
     if (isFailed) {
       return (
         <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/20 text-red-300 border border-red-500/40">
@@ -300,6 +300,7 @@ function EmployeeCard({
         </span>
       )
     }
+
     return (
       <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/20 text-slate-300 border border-slate-500/40">
         <Square className="size-2.5" />
@@ -382,11 +383,10 @@ function EmployeeCard({
             <span className="font-mono truncate">{employee.sandboxPath}</span>
           </div>
           <button
-            type="button"
-            onClick={onCopyPath}
-            className="p-1 hover:text-white text-slate-400 rounded shrink-0 transition-colors"
-            title="Copy sandbox path"
             aria-label="Copy sandbox path"
+            className="p-1 hover:text-white text-slate-400 rounded shrink-0 transition-colors"
+            onClick={onCopyPath}
+            type="button"
           >
             {copiedId === employee.id ? (
               <span className="text-[10px] text-emerald-400 font-mono">Copied!</span>
@@ -429,18 +429,17 @@ function EmployeeCard({
                 Steer Employee Guidance
               </span>
               <button
-                type="button"
-                onClick={onCloseSteer}
                 className="text-slate-400 hover:text-white"
+                onClick={onCloseSteer}
+                type="button"
               >
                 <X className="size-3" />
               </button>
             </div>
             <div className="flex gap-1.5">
               <input
-                type="text"
-                placeholder="Give real-time instructions..."
-                value={steeringText}
+                autoFocus
+                className="flex-1 bg-black/40 border border-cyan-500/40 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-400"
                 onChange={e => onSteeringTextChange(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter') {
@@ -448,13 +447,14 @@ function EmployeeCard({
                     onSubmitSteer()
                   }
                 }}
-                className="flex-1 bg-black/40 border border-cyan-500/40 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-400"
-                autoFocus
+                placeholder="Give real-time instructions..."
+                type="text"
+                value={steeringText}
               />
               <button
-                type="button"
-                onClick={onSubmitSteer}
                 className="px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-lg text-xs flex items-center gap-1"
+                onClick={onSubmitSteer}
+                type="button"
               >
                 <Send className="size-3" />
                 <span>Steer</span>
@@ -464,10 +464,10 @@ function EmployeeCard({
         ) : (
           <div className="flex items-center justify-between gap-2">
             <button
-              type="button"
-              onClick={onOpenSteer}
-              disabled={!isRunning}
               className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-40 disabled:hover:bg-white/5 text-xs font-medium text-slate-200 transition-colors"
+              disabled={!isRunning}
+              onClick={onOpenSteer}
+              type="button"
             >
               <Compass className="size-3 text-cyan-400" />
               <span>Steer</span>
@@ -475,33 +475,30 @@ function EmployeeCard({
 
             {isRunning ? (
               <button
-                type="button"
-                onClick={() => pauseSubagent(employee.id)}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
-                title="Pause worker"
                 aria-label="Pause worker"
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                onClick={() => pauseSubagent(employee.id)}
+                type="button"
               >
                 <Pause className="size-3.5" />
               </button>
             ) : (
               <button
-                type="button"
-                onClick={() => resumeSubagent(employee.id)}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
-                title="Resume worker"
                 aria-label="Resume worker"
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                onClick={() => resumeSubagent(employee.id)}
+                type="button"
               >
                 <Play className="size-3.5" />
               </button>
             )}
 
             <button
-              type="button"
-              onClick={() => stopSubagent(employee.id)}
-              disabled={!isRunning}
-              className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 disabled:opacity-40 transition-colors"
-              title="Stop worker"
               aria-label="Stop worker"
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 disabled:opacity-40 transition-colors"
+              disabled={!isRunning}
+              onClick={() => stopSubagent(employee.id)}
+              type="button"
             >
               <Square className="size-3.5" />
             </button>

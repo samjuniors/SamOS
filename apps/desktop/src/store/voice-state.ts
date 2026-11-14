@@ -1,16 +1,17 @@
 import { atom } from 'nanostores'
 
-import type { AudioChunkPayload, VoiceState, VoiceTranscriptPayload, WakeWordEvent } from '@/app/voice-ai-os/types'
 import { navigateToUrl } from '@/app/voice-ai-os/browser-workspace'
-import { setActiveWorkspaceTab } from './workspace-tab-state'
+import type { AudioChunkPayload, VoiceState, VoiceTranscriptPayload, WakeWordEvent } from '@/app/voice-ai-os/types'
+
 import {
   $aiProviderConfig,
   executeAiCompletion,
   generateGeminiSpeechAudio,
   processAudioQueryWithGemini
 } from './ai-provider-config'
-import { $aiEmployees, upsertAIEmployee } from './subagent-telemetry'
 import { $cuaActive, $cuaTargetApp, recordCuaActionStart } from './cua-state'
+import { upsertAIEmployee } from './subagent-telemetry'
+import { setActiveWorkspaceTab } from './workspace-tab-state'
 
 /**
  * Voice AI OS finite state machine store.
@@ -54,6 +55,7 @@ const MAX_RECORDING_DURATION_MS = 7500
 export function setVoiceState(state: VoiceState): void {
   $voiceState.set(state)
   const voiceApi = (window as unknown as { hermesDesktop?: { voice?: { setState: (s: VoiceState) => Promise<void> } } }).hermesDesktop?.voice
+
   if (voiceApi?.setState) {
     void voiceApi.setState(state)
   }
@@ -69,29 +71,37 @@ export function setVoiceTranscript(transcript: VoiceTranscriptPayload): void {
   $voiceTranscript.set(transcript)
 }
 
-/** User barge-in interrupt: instantly stops TTS and switches back to LISTENING or IDLE */
-export async function interruptVoice(): Promise<void> {
+/** Stop playback locally without recursively invoking the Electron IPC interrupt. */
+function stopLocalVoicePlayback(): void {
   if (currentAudio) {
     currentAudio.pause()
     currentAudio.src = ''
     currentAudio = null
   }
+
   if (window.speechSynthesis) {
     window.speechSynthesis.cancel()
   }
-  currentUtterance = null
 
+  currentUtterance = null
   const currentState = $voiceState.get()
+
   if (currentState === 'SPEAKING' || currentState === 'THINKING' || currentState === 'CUA_ACTIVE') {
     $voiceState.set('IDLE')
   }
+}
+
+/** User barge-in interrupt: instantly stop TTS and notify Electron. */
+export async function interruptVoice(): Promise<void> {
+  stopLocalVoicePlayback()
 
   const voiceApi = (window as unknown as { hermesDesktop?: { voice?: { interrupt: () => Promise<void> } } }).hermesDesktop?.voice
+
   if (voiceApi?.interrupt) {
     try {
       await voiceApi.interrupt()
     } catch {
-      // IPC interrupt fallback handled gracefully
+      // Local playback still stops when Electron is unavailable.
     }
   }
 }
@@ -100,14 +110,17 @@ export async function interruptVoice(): Promise<void> {
 export function toggleMicrophoneMute(): boolean {
   const next = !$isVoiceMuted.get()
   $isVoiceMuted.set(next)
+
   if (next) {
     if ($voiceState.get() === 'LISTENING') {
       $voiceState.set('IDLE')
     }
+
     stopHandsfreeMic()
   } else {
     void startHandsfreeAudio()
   }
+
   return next
 }
 
@@ -117,6 +130,7 @@ export function toggleMicrophoneMute(): boolean {
  */
 export async function dispatchSystemVoiceIntent(text: string): Promise<string | null> {
   const lower = text.toLowerCase()
+
   const cuaApi = (window as unknown as {
     hermesDesktop?: {
       cua?: {
@@ -144,6 +158,7 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
     const { runAutonomousSelfRepair, openSelfRepairModal } = await import('./self-repair-engine')
     openSelfRepairModal()
     const result = await runAutonomousSelfRepair()
+
     return result.narration
   }
 
@@ -176,20 +191,25 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
 
     if (lower.includes('onboarding')) {
       openCompanyOnboarding()
+
       return "Opening company onboarding. Let's configure your enterprise profile, executive roster, and budget guardrails."
     }
 
     if (lower.includes('heartbeat')) {
       await runCompanyHeartbeat()
-      return "Autonomous heartbeat executed. All company agents and tasks are synchronized with the strategic goal board."
+
+      return "Local check complete. Paperclip is not yet connected; no agent tasks were executed."
     }
 
     if (lower.includes('approve')) {
       const inReviewTask = $companyTasks.get().find(t => t.status === 'in_review')
+
       if (inReviewTask) {
         approveCompanyTask(inReviewTask.id)
+
         return `Approved and merged "${inReviewTask.title}". Budget updated on company P&L.`
       }
+
       return "All pending tasks have already been approved. No deliverables are waiting in the review gate."
     }
 
@@ -205,6 +225,7 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
   // 1. YouTube & Web Browser Commands
   const isYoutube = lower.includes('youtube') || lower.includes('you tube')
   const isPopup = lower.includes('popup') || lower.includes('pop out') || lower.includes('popout') || lower.includes('new window')
+
   const isBrowserCmd =
     lower.includes('open browser') ||
     lower.includes('open google') ||
@@ -218,6 +239,7 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
     const url = 'https://www.youtube.com'
     navigateToUrl(url, isPopup)
     setActiveWorkspaceTab('browser')
+
     if (isPopup) {
       return 'Opening YouTube in a dedicated popup window for you.'
     } else {
@@ -227,12 +249,14 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
 
   if (isBrowserCmd) {
     let target = 'https://www.google.com'
+
     if (lower.includes('github')) {
       target = 'https://github.com'
     } else if (lower.includes('google')) {
       target = 'https://www.google.com'
     } else {
       const match = text.match(/https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.(com|org|io|dev|ai|net)[^\s]*/i)
+
       if (match) {
         target = match[0]
       } else {
@@ -240,8 +264,10 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
         target = query ? `https://www.google.com/search?q=${encodeURIComponent(query)}` : 'https://www.google.com'
       }
     }
+
     navigateToUrl(target, isPopup)
     setActiveWorkspaceTab('browser')
+
     return isPopup ? `Opening in a dedicated popup window.` : `Opening your browser workspace.`
   }
 
@@ -282,8 +308,10 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
             text: `Typed "${textToType}"`
           })
         }, 850)
+
         return `Opening Notepad on your computer and typing: "${textToType}".`
       }
+
       return 'Opening Notepad on your Windows desktop.'
     } else {
       return 'Opening Notepad on your Windows computer.'
@@ -304,8 +332,10 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
         timestamp: Date.now(),
         text: 'Launched Calc.exe'
       })
+
       return 'Opening Calculator on your Windows computer.'
     }
+
     return 'Opening Calculator on your computer.'
   }
 
@@ -323,8 +353,10 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
         timestamp: Date.now(),
         text: 'Launched Explorer.exe'
       })
+
       return 'Opening Windows File Explorer.'
     }
+
     return 'Opening Windows File Explorer.'
   }
 
@@ -342,13 +374,16 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
         timestamp: Date.now(),
         text: 'Launched Paint.exe'
       })
+
       return 'Opening Microsoft Paint on your computer.'
     }
+
     return 'Opening Microsoft Paint.'
   }
 
   if (isTypeOnly) {
     const textToType = text.replace(/^(type|write)\s+/i, '').trim()
+
     if (textToType && cuaApi?.typeText) {
       setActiveWorkspaceTab('cua')
       setVoiceState('CUA_ACTIVE')
@@ -359,6 +394,7 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
         timestamp: Date.now(),
         text: `Typed "${textToType}"`
       })
+
       return `Typing: "${textToType}" into your active computer window.`
     }
   }
@@ -374,6 +410,7 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
       timestamp: Date.now(),
       text
     })
+
     return 'Executing click interaction on your desktop.'
   }
 
@@ -400,6 +437,7 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
       currentTool: 'terminal_exec',
       thinkingSnippet: 'Analyzing task requirements and executing workspace operations in sandbox...'
     })
+
     return `Delegating task to new AI employee: "${goal}".`
   }
 
@@ -411,7 +449,8 @@ export async function dispatchSystemVoiceIntent(text: string): Promise<string | 
  */
 export async function handleSpokenCommand(commandText: string): Promise<void> {
   const text = commandText.trim()
-  if (!text) return
+
+  if (!text) {return}
 
   // Record user utterance in transcript history
   const userEntry = {
@@ -420,6 +459,7 @@ export async function handleSpokenCommand(commandText: string): Promise<void> {
     role: 'user' as const,
     timestamp: Date.now()
   }
+
   $recentTranscripts.set([...$recentTranscripts.get().slice(-29), userEntry])
 
   setVoiceState('THINKING')
@@ -439,6 +479,7 @@ export async function handleSpokenCommand(commandText: string): Promise<void> {
     role: 'agent' as const,
     timestamp: Date.now()
   }
+
   $recentTranscripts.set([...$recentTranscripts.get().slice(-29), agentEntry])
 
   await speakResponse(reply)
@@ -466,6 +507,7 @@ export async function handleSpokenAudio(audioBase64: string, mimeType: string): 
     role: 'user' as const,
     timestamp: Date.now()
   }
+
   $recentTranscripts.set([...$recentTranscripts.get().slice(-29), userEntry])
 
   // Autonomous Agent Decision Engine: Evaluates spoken intent dynamically with full system context
@@ -483,6 +525,7 @@ export async function handleSpokenAudio(audioBase64: string, mimeType: string): 
     role: 'agent' as const,
     timestamp: Date.now()
   }
+
   $recentTranscripts.set([...$recentTranscripts.get().slice(-29), agentEntry])
 
   await speakResponse(finalReply)
@@ -497,8 +540,10 @@ export async function speakResponse(reply: string): Promise<void> {
 
 export async function speakCompanionText(reply: string): Promise<void> {
   const cfg = $aiProviderConfig.get()
+
   if (!cfg.voiceFeedbackEnabled) {
     setVoiceState('IDLE')
+
     return
   }
 
@@ -506,9 +551,11 @@ export async function speakCompanionText(reply: string): Promise<void> {
 
   // 1. Primary: Google Gemini Voice TTS (Aoede / Warm Companion from .env)
   let geminiSpoken = false
+
   if (cfg.cloudApiKey) {
     try {
       const speechData = await generateGeminiSpeechAudio(reply, cfg.voiceId || 'Aoede')
+
       if (speechData?.audioBase64) {
         if (currentAudio) {
           currentAudio.pause()
@@ -530,18 +577,22 @@ export async function speakCompanionText(reply: string): Promise<void> {
         audio.onended = () => {
           clearInterval(interval)
           setVoiceRmsLevel(0)
+
           if ($voiceState.get() === 'SPEAKING') {
             setVoiceState('IDLE')
           }
+
           currentAudio = null
         }
 
         audio.onerror = () => {
           clearInterval(interval)
           setVoiceRmsLevel(0)
+
           if ($voiceState.get() === 'SPEAKING') {
             setVoiceState('IDLE')
           }
+
           currentAudio = null
         }
 
@@ -558,12 +609,14 @@ export async function speakCompanionText(reply: string): Promise<void> {
     window.speechSynthesis.cancel()
 
     let voices = window.speechSynthesis.getVoices()
+
     if (!voices.length) {
       await new Promise<void>(res => {
         const handler = () => {
           window.speechSynthesis.removeEventListener('voiceschanged', handler)
           res()
         }
+
         window.speechSynthesis.addEventListener('voiceschanged', handler)
         setTimeout(res, 200)
       })
@@ -571,6 +624,7 @@ export async function speakCompanionText(reply: string): Promise<void> {
     }
 
     const utter = new SpeechSynthesisUtterance(reply)
+
     const femaleVoice = voices.find(v =>
       /zira|jenny|aria|samantha|victoria|karen|female/i.test(v.name)
     )
@@ -596,9 +650,11 @@ export async function speakCompanionText(reply: string): Promise<void> {
     utter.onend = () => {
       clearInterval(interval)
       setVoiceRmsLevel(0)
+
       if ($voiceState.get() === 'SPEAKING') {
         setVoiceState('IDLE')
       }
+
       currentUtterance = null
     }
 
@@ -619,9 +675,11 @@ export async function speakCompanionText(reply: string): Promise<void> {
 export async function requestMicrophonePermission(): Promise<boolean> {
   try {
     await startHandsfreeAudio()
+
     return $micPermissionStatus.get() === 'granted'
   } catch {
     $micPermissionStatus.set('denied')
+
     return false
   }
 }
@@ -631,11 +689,12 @@ export async function requestMicrophonePermission(): Promise<boolean> {
  * Captures speech audio hands-free and streams directly to Gemini.
  */
 export async function startHandsfreeAudio(): Promise<void> {
-  if ($isVoiceMuted.get()) return
+  if ($isVoiceMuted.get()) {return}
 
   try {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       $micPermissionStatus.set('granted')
+
       return
     }
 
@@ -653,6 +712,7 @@ export async function startHandsfreeAudio(): Promise<void> {
     if (!audioContext) {
       audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
     }
+
     if (audioContext.state === 'suspended') {
       await audioContext.resume()
     }
@@ -666,12 +726,14 @@ export async function startHandsfreeAudio(): Promise<void> {
     const dataArray = new Uint8Array(bufferLength)
 
     const sampleVolume = () => {
-      if (!analyserNode || !mediaStream) return
+      if (!analyserNode || !mediaStream) {return}
       analyserNode.getByteFrequencyData(dataArray)
       let sum = 0
+
       for (let i = 0; i < bufferLength; i++) {
         sum += dataArray[i] * dataArray[i]
       }
+
       const rms = Math.sqrt(sum / bufferLength) / 255.0
 
       if ($voiceState.get() !== 'SPEAKING') {
@@ -706,11 +768,13 @@ export async function startHandsfreeAudio(): Promise<void> {
 
             try {
               mediaRecorder = new MediaRecorder(mediaStream, { mimeType: supportedMime })
+
               mediaRecorder.ondataavailable = e => {
                 if (e.data && e.data.size > 0) {
                   recordedChunks.push(e.data)
                 }
               }
+
               mediaRecorder.start(100)
             } catch (err) {
               console.warn('[Voice] MediaRecorder start:', err)
@@ -744,6 +808,7 @@ export async function startHandsfreeAudio(): Promise<void> {
             if (speechDuration >= MIN_SPEECH_DURATION_MS) {
               const recorder = mediaRecorder
               const mime = recorder.mimeType || 'audio/webm'
+
               recorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: mime })
                 recordedChunks = []
@@ -752,20 +817,24 @@ export async function startHandsfreeAudio(): Promise<void> {
 
                 if (blob.size > 400) {
                   const reader = new FileReader()
+
                   reader.onloadend = () => {
                     const res = reader.result as string
                     const base64 = res?.split(',')[1]
+
                     if (base64) {
                       void handleSpokenAudio(base64, mime)
                     } else {
                       setVoiceState('IDLE')
                     }
                   }
+
                   reader.readAsDataURL(blob)
                 } else {
                   setVoiceState('IDLE')
                 }
               }
+
               try {
                 recorder.stop()
               } catch {
@@ -776,8 +845,11 @@ export async function startHandsfreeAudio(): Promise<void> {
               if (mediaRecorder.state === 'recording') {
                 try {
                   mediaRecorder.stop()
-                } catch {}
+                } catch {
+                  // Recorder or media track may already be stopped during cancellation.
+                }
               }
+
               mediaRecorder = null
               recordedChunks = []
               isRecordingTurn = false
@@ -804,22 +876,29 @@ export function stopHandsfreeMic(): void {
     cancelAnimationFrame(animFrameId)
     animFrameId = null
   }
+
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     try {
       mediaRecorder.stop()
-    } catch {}
+    } catch {
+                  // Recorder or media track may already be stopped during cancellation.
+                }
   }
+
   mediaRecorder = null
   recordedChunks = []
   isRecordingTurn = false
+
   if (mediaStream) {
     mediaStream.getTracks().forEach(t => t.stop())
     mediaStream = null
   }
+
   if (audioContext) {
     audioContext.close().catch(() => {})
     audioContext = null
   }
+
   $handsfreeActive.set(false)
   setVoiceRmsLevel(0)
 }
@@ -830,10 +909,12 @@ export function stopHandsfreeMic(): void {
  */
 export function toggleHandsfreeRecordingTurn(): void {
   const curState = $voiceState.get()
+
   if (curState === 'LISTENING') {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       const recorder = mediaRecorder
       const mime = recorder.mimeType || 'audio/webm'
+
       recorder.onstop = () => {
         const blob = new Blob(recordedChunks, { type: mime })
         recordedChunks = []
@@ -842,20 +923,24 @@ export function toggleHandsfreeRecordingTurn(): void {
 
         if (blob.size > 200) {
           const reader = new FileReader()
+
           reader.onloadend = () => {
             const res = reader.result as string
             const base64 = res?.split(',')[1]
+
             if (base64) {
               void handleSpokenAudio(base64, mime)
             } else {
               setVoiceState('IDLE')
             }
           }
+
           reader.readAsDataURL(blob)
         } else {
           setVoiceState('IDLE')
         }
       }
+
       try {
         recorder.stop()
       } catch {
@@ -866,6 +951,7 @@ export function toggleHandsfreeRecordingTurn(): void {
     }
   } else if (curState === 'IDLE') {
     setVoiceState('LISTENING')
+
     if (mediaStream) {
       isRecordingTurn = true
       speechStartTime = Date.now()
@@ -879,11 +965,13 @@ export function toggleHandsfreeRecordingTurn(): void {
 
       try {
         mediaRecorder = new MediaRecorder(mediaStream, { mimeType: supportedMime })
+
         mediaRecorder.ondataavailable = e => {
           if (e.data && e.data.size > 0) {
             recordedChunks.push(e.data)
           }
         }
+
         mediaRecorder.start(100)
       } catch {
         isRecordingTurn = false
@@ -909,6 +997,7 @@ export function initVoiceStateIpc(): () => void {
         onWakeWord?: (cb: (ev: WakeWordEvent) => void) => () => void
         onAudioStream?: (cb: (chunk: AudioChunkPayload) => void) => () => void
         onTranscript?: (cb: (t: VoiceTranscriptPayload) => void) => () => void
+        onInterrupted?: (cb: () => void) => () => void
       }
     }
   }).hermesDesktop?.voice
@@ -918,7 +1007,7 @@ export function initVoiceStateIpc(): () => void {
   if (voiceApi) {
     if (voiceApi.getState) {
       void voiceApi.getState().then(st => {
-        if (st) $voiceState.set(st)
+        if (st) {$voiceState.set(st)}
       })
     }
 
@@ -939,10 +1028,19 @@ export function initVoiceStateIpc(): () => void {
       unsubs.push(voiceApi.onAudioStream(chunk => setVoiceRmsLevel(chunk.rmsLevel)))
     }
 
+    if (voiceApi.onInterrupted) {
+      unsubs.push(voiceApi.onInterrupted(() => {
+        // The native ESC event must stop renderer audio, without sending IPC
+        // back to Electron and triggering a recursive interruption loop.
+        stopLocalVoicePlayback()
+      }))
+    }
+
     if (voiceApi.onTranscript) {
       unsubs.push(
         voiceApi.onTranscript(t => {
           setVoiceTranscript(t)
+
           if (t.isFinal && t.text.trim()) {
             void handleSpokenCommand(t.text)
           }

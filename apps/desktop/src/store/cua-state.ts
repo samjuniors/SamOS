@@ -40,17 +40,20 @@ export async function abortCua(): Promise<void> {
 export function recordCuaActionStart(payload: CuaActionStartPayload): void {
   $cuaActive.set(true)
   $cuaLastAction.set(payload)
+
   const item = {
     id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     action: `${payload.action}${payload.elementId ? ` [SOM #${payload.elementId}]` : ''}${payload.text ? ` "${payload.text}"` : ''}`,
     timestamp: payload.timestamp
   }
+
   $cuaActionHistory.set([item, ...$cuaActionHistory.get().slice(0, 19)])
 }
 
 /** Record completion of a CUA action */
 export function recordCuaActionEnd(payload: CuaActionEndPayload): void {
   const current = $cuaActionHistory.get()
+
   if (current.length > 0) {
     const updated = [...current]
     updated[0] = {
@@ -76,6 +79,7 @@ export function initCuaIpc(): () => void {
         onCapture?: (cb: (payload: CuaCapturePayload) => void) => () => void
         onActionStart?: (cb: (payload: CuaActionStartPayload) => void) => () => void
         onActionEnd?: (cb: (payload: CuaActionEndPayload) => void) => () => void
+        onAborted?: (cb: () => void) => () => void
       }
     }
   }).hermesDesktop?.cua
@@ -98,6 +102,15 @@ export function initCuaIpc(): () => void {
     unsubs.push(cuaApi.onActionEnd(end => recordCuaActionEnd(end)))
   }
 
+  if (cuaApi.onAborted) {
+    unsubs.push(cuaApi.onAborted(() => {
+      // ESC / native abort must update the renderer immediately, including
+      // any delayed Sofia typing decisions waiting on $cuaActive.
+      $cuaActive.set(false)
+      $cuaLastAction.set(null)
+    }))
+  }
+
   return () => {
     unsubs.forEach(f => f())
   }
@@ -105,7 +118,7 @@ export function initCuaIpc(): () => void {
 
 /** Seed demo Set-of-Marks elements for visual verification and testing */
 export function seedDemoCuaElementsIfEmpty(): void {
-  if ($cuaElements.get().length > 0) return
+  if ($cuaElements.get().length > 0) {return}
 
   const sampleMarks: CuaUIElement[] = [
     {

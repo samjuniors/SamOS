@@ -1,12 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
-  $aiProviderConfig,
   selectDynamicModelForTask,
   setAiProviderConfig
 } from '@/store/ai-provider-config'
 import {
-  $companyAgents,
   createCompanyTask
 } from '@/store/company-state'
 
@@ -100,6 +98,7 @@ describe('Dynamic Smart Model Routing & Multi-Provider System', () => {
       'agent_hermes_ceo',
       'urgent'
     )
+
     expect(urgentTask.allocatedModel).toBeDefined()
     expect(urgentTask.allocatedModel).toContain('Tier 3 Frontier')
 
@@ -110,6 +109,7 @@ describe('Dynamic Smart Model Routing & Multi-Provider System', () => {
       'agent_aegis_qa',
       'high'
     )
+
     expect(aegisTask.allocatedModel).toBe('deepseek-reasoner')
   })
 })

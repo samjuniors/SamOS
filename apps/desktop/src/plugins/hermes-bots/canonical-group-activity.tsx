@@ -112,6 +112,7 @@ export function useCanonicalRoomLive(events: CanonicalGroupEvent[], driver: Cano
   const log = events as RoomLogEvent[]
   const focus = useMemo(() => focusThread(log, replyThread), [log, replyThread])
   const outcomes = useMemo(() => memberOutcomes(log), [log])
+
   const stopConfirmed = !!driver?.counts && driver.working === false && activity?.length === 0 &&
     driver.pending_actions?.length === 0 && Object.entries(driver.counts).every(([status, count]) =>
       count === 0 || ['settled', 'cancelled', 'failed'].includes(status))

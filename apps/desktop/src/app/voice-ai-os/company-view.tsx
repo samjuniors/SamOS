@@ -1,28 +1,18 @@
+import './voice-ai-os.css'
+
 import { useStore } from '@nanostores/react'
 import {
   Activity,
-  AlertTriangle,
-  ArrowRight,
-  Bot,
   Building,
   CheckCircle2,
-  Clock,
   Coins,
   Cpu,
   FileCode,
-  FolderTree,
-  GitCommit,
   GitPullRequest,
   Layers,
-  MessageSquare,
-  Play,
   Plus,
   RefreshCw,
-  Search,
   ShieldCheck,
-  Sparkles,
-  TrendingUp,
-  UserCheck,
   UserPlus,
   Users,
   Wrench,
@@ -39,16 +29,14 @@ import {
   $selectedTaskId,
   addCompanyAgent,
   approveCompanyTask,
+  type CompanyAgent,
+  type CompanyTask,
   createCompanyTask,
   openCompanyOnboarding,
   rejectCompanyTask,
-  runCompanyHeartbeat,
-  updateTaskStatus,
-  type CompanyAgent,
-  type CompanyTask
+  runCompanyHeartbeat
 } from '@/store/company-state'
 import { speakCompanionText } from '@/store/voice-state'
-import './voice-ai-os.css'
 
 export function CompanyView() {
   const profile = useStore($companyProfile)
@@ -91,15 +79,18 @@ export function CompanyView() {
   // Filter tasks
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => {
-      if (filterTag !== 'all' && t.goalTag !== filterTag) return false
+      if (filterTag !== 'all' && t.goalTag !== filterTag) {return false}
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase()
+
         return (
           t.title.toLowerCase().includes(q) ||
           t.description.toLowerCase().includes(q) ||
           t.goalTag.toLowerCase().includes(q)
         )
       }
+
       return true
     })
   }, [tasks, filterTag, searchQuery])
@@ -115,7 +106,8 @@ export function CompanyView() {
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newTaskTitle.trim()) return
+
+    if (!newTaskTitle.trim()) {return}
 
     createCompanyTask(
       newTaskTitle.trim(),
@@ -133,7 +125,8 @@ export function CompanyView() {
 
   const handleHireAgent = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newAgentName.trim() || !newAgentRole.trim()) return
+
+    if (!newAgentName.trim() || !newAgentRole.trim()) {return}
 
     addCompanyAgent({
       name: newAgentName.trim(),
@@ -156,7 +149,7 @@ export function CompanyView() {
   const handleTriggerHeartbeat = async () => {
     await runCompanyHeartbeat()
     void speakCompanionText(
-      `Heartbeat complete. All autonomous agents synced with our company goal board.`
+      'Local coordination check complete. Paperclip is not connected; no agent tasks were executed.'
     )
   }
 
@@ -172,7 +165,7 @@ export function CompanyView() {
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-white tracking-tight">{profile.name}</h2>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#1b202a] text-[#ff7f24] border border-[#ff6a00]/30">
-                Paperclip Core
+                Local prototype · Paperclip disconnected
               </span>
             </div>
             <p className="text-xs text-[#9aa5b8] truncate max-w-xl">{profile.mission}</p>
@@ -201,8 +194,8 @@ export function CompanyView() {
           {/* Pending Approvals Pill */}
           {pendingApprovalsCount > 0 && (
             <div
-              onClick={() => setActiveSubView('board')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/20 border border-[#ff6a00]/60 text-xs font-semibold text-[#ff7f24] cursor-pointer animate-pulse"
+              onClick={() => setActiveSubView('board')}
               title="Tasks awaiting founder approval"
             >
               <GitPullRequest className="size-3.5 text-[#ff6a00]" />
@@ -212,24 +205,24 @@ export function CompanyView() {
 
           {/* Autonomous Heartbeat Runner */}
           <button
-            type="button"
-            onClick={handleTriggerHeartbeat}
-            disabled={isHeartbeatRunning}
+            aria-label="Check local coordination status (no real Paperclip execution)"
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#1b202a] hover:bg-[#262c37] border border-[#ff6a00]/40 text-xs font-medium text-slate-200 transition-all cursor-pointer shadow-sm hover:border-[#ff6a00]"
-            title="Execute Paperclip CEO Heartbeat Checklist"
+            disabled={isHeartbeatRunning}
+            onClick={handleTriggerHeartbeat}
+            type="button"
           >
             <RefreshCw
               className={`size-3.5 text-[#ff6a00] ${isHeartbeatRunning ? 'animate-spin' : ''}`}
             />
-            <span>{isHeartbeatRunning ? 'Running Heartbeat...' : 'Trigger Heartbeat'}</span>
+            <span>{isHeartbeatRunning ? 'Checking...' : 'Check Coordination'}</span>
           </button>
 
           {/* Quick Onboarding / Edit Trigger */}
           <button
-            type="button"
-            onClick={openCompanyOnboarding}
+            aria-label="Reconfigure Company Settings & Goals"
             className="p-2 rounded-xl bg-[#0c0e12] hover:bg-[#1b202a] border border-[#262c37] text-slate-400 hover:text-white transition-colors cursor-pointer"
-            title="Reconfigure Company Settings & Goals"
+            onClick={openCompanyOnboarding}
+            type="button"
           >
             <Wrench className="size-3.5 text-[#ff7f24]" />
           </button>
@@ -241,39 +234,39 @@ export function CompanyView() {
         {/* View Switcher Pills */}
         <div className="flex items-center gap-1.5">
           <button
-            type="button"
-            onClick={() => setActiveSubView('board')}
             className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeSubView === 'board'
                 ? 'bg-[#ff6a00]/20 text-[#ff7f24] border border-[#ff6a00]/50'
                 : 'text-[#9aa5b8] hover:text-white hover:bg-[#1b202a]'
             }`}
+            onClick={() => setActiveSubView('board')}
+            type="button"
           >
             <Layers className="size-3.5" />
             <span>Autonomous Task Board ({tasks.length})</span>
           </button>
 
           <button
-            type="button"
-            onClick={() => setActiveSubView('org')}
             className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeSubView === 'org'
                 ? 'bg-[#ff6a00]/20 text-[#ff7f24] border border-[#ff6a00]/50'
                 : 'text-[#9aa5b8] hover:text-white hover:bg-[#1b202a]'
             }`}
+            onClick={() => setActiveSubView('org')}
+            type="button"
           >
             <Users className="size-3.5" />
             <span>Executive Org Chart ({agents.length})</span>
           </button>
 
           <button
-            type="button"
-            onClick={() => setActiveSubView('logs')}
             className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeSubView === 'logs'
                 ? 'bg-[#ff6a00]/20 text-[#ff7f24] border border-[#ff6a00]/50'
                 : 'text-[#9aa5b8] hover:text-white hover:bg-[#1b202a]'
             }`}
+            onClick={() => setActiveSubView('logs')}
+            type="button"
           >
             <Activity className="size-3.5" />
             <span>Heartbeat Telemetry</span>
@@ -284,9 +277,9 @@ export function CompanyView() {
         <div className="flex items-center gap-2">
           {activeSubView === 'board' && (
             <button
-              type="button"
-              onClick={() => setIsNewTaskModalOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#ff6a00] hover:bg-[#ff7f24] text-xs font-bold text-black transition-colors cursor-pointer shadow-sm shadow-[#ff6a00]/30"
+              onClick={() => setIsNewTaskModalOpen(true)}
+              type="button"
             >
               <Plus className="size-3.5" />
               <span>Create Task</span>
@@ -295,9 +288,9 @@ export function CompanyView() {
 
           {activeSubView === 'org' && (
             <button
-              type="button"
-              onClick={() => setIsHireModalOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#ff6a00] hover:bg-[#ff7f24] text-xs font-bold text-black transition-colors cursor-pointer shadow-sm shadow-[#ff6a00]/30"
+              onClick={() => setIsHireModalOpen(true)}
+              type="button"
             >
               <UserPlus className="size-3.5" />
               <span>Hire AI Agent</span>
@@ -328,10 +321,10 @@ export function CompanyView() {
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {tasksByColumn.todo.map(task => (
                   <TaskCard
-                    key={task.id}
-                    task={task}
                     agents={agents}
+                    key={task.id}
                     onClick={() => $selectedTaskId.set(task.id)}
+                    task={task}
                   />
                 ))}
                 {tasksByColumn.todo.length === 0 && (
@@ -357,10 +350,10 @@ export function CompanyView() {
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {tasksByColumn.in_progress.map(task => (
                   <TaskCard
-                    key={task.id}
-                    task={task}
                     agents={agents}
+                    key={task.id}
                     onClick={() => $selectedTaskId.set(task.id)}
+                    task={task}
                   />
                 ))}
                 {tasksByColumn.in_progress.length === 0 && (
@@ -387,11 +380,11 @@ export function CompanyView() {
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {tasksByColumn.in_review.map(task => (
                   <TaskCard
-                    key={task.id}
-                    task={task}
                     agents={agents}
                     highlightReview
+                    key={task.id}
                     onClick={() => $selectedTaskId.set(task.id)}
+                    task={task}
                   />
                 ))}
                 {tasksByColumn.in_review.length === 0 && (
@@ -419,10 +412,10 @@ export function CompanyView() {
               <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {tasksByColumn.done.map(task => (
                   <TaskCard
-                    key={task.id}
-                    task={task}
                     agents={agents}
+                    key={task.id}
                     onClick={() => $selectedTaskId.set(task.id)}
+                    task={task}
                   />
                 ))}
               </div>
@@ -459,8 +452,8 @@ export function CompanyView() {
             <div className="flex flex-col items-center">
               {agents.filter(a => a.department === 'Executive').map(ceo => (
                 <div
-                  key={ceo.id}
                   className="px-6 py-4 rounded-2xl bg-[#101318] border border-[#ff6a00]/40 shadow-md w-full max-w-xl flex items-start gap-4"
+                  key={ceo.id}
                 >
                   <div
                     className="size-12 rounded-xl flex items-center justify-center font-bold text-lg text-black shrink-0"
@@ -498,8 +491,8 @@ export function CompanyView() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {agents.filter(a => a.department !== 'Executive').map(agent => (
                 <div
-                  key={agent.id}
                   className="p-4 rounded-2xl bg-[#101318] border border-[#262c37] hover:border-[#ff6a00]/40 transition-colors flex flex-col justify-between"
+                  key={agent.id}
                 >
                   <div>
                     <div className="flex items-center gap-3 mb-2">
@@ -546,7 +539,7 @@ export function CompanyView() {
 
             <div className="flex-1 overflow-y-auto space-y-1.5 text-slate-300">
               {heartbeatLogs.map((log, idx) => (
-                <div key={idx} className="flex items-start gap-2 hover:bg-[#1b202a] px-2 py-1 rounded">
+                <div className="flex items-start gap-2 hover:bg-[#1b202a] px-2 py-1 rounded" key={idx}>
                   <span className="text-[#ff6a00] select-none">»</span>
                   <span className={log.includes('APPROVAL GATE') ? 'text-[#ff7f24] font-bold' : ''}>
                     {log}
@@ -561,9 +554,9 @@ export function CompanyView() {
       {/* FOUNDER APPROVAL GATE MODAL / DRAWER */}
       {selectedTask && (
         <div
+          aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn"
           role="dialog"
-          aria-modal="true"
         >
           <div className="w-full max-w-2xl rounded-2xl bg-[#101318] border border-[#262c37] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
             {/* Header */}
@@ -582,9 +575,9 @@ export function CompanyView() {
                 </div>
               </div>
               <button
-                type="button"
-                onClick={() => $selectedTaskId.set(null)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#262c37]"
+                onClick={() => $selectedTaskId.set(null)}
+                type="button"
               >
                 <X className="size-4" />
               </button>
@@ -625,11 +618,11 @@ export function CompanyView() {
 
                   <div className="pt-2">
                     <input
-                      type="text"
-                      placeholder="Optional steering notes or feedback..."
-                      value={rejectFeedback}
-                      onChange={e => setRejectFeedback(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-xs text-white placeholder-slate-600 focus:outline-none focus:border-[#ff6a00]"
+                      onChange={e => setRejectFeedback(e.target.value)}
+                      placeholder="Optional steering notes or feedback..."
+                      type="text"
+                      value={rejectFeedback}
                     />
                   </div>
                 </div>
@@ -639,9 +632,9 @@ export function CompanyView() {
             {/* Actions */}
             <div className="px-6 py-4 border-t border-[#262c37] bg-[#0c0e12] flex items-center justify-between">
               <button
-                type="button"
-                onClick={() => $selectedTaskId.set(null)}
                 className="px-4 py-2 rounded-xl bg-[#1b202a] hover:bg-[#262c37] text-xs font-medium text-slate-300 transition-colors"
+                onClick={() => $selectedTaskId.set(null)}
+                type="button"
               >
                 Close
               </button>
@@ -649,23 +642,23 @@ export function CompanyView() {
               {selectedTask.status === 'in_review' && (
                 <div className="flex items-center gap-2">
                   <button
-                    type="button"
+                    className="px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold border border-rose-500/40 transition-colors"
                     onClick={() => {
                       rejectCompanyTask(selectedTask.id, rejectFeedback || 'Founder requested further iterations.')
                       $selectedTaskId.set(null)
                     }}
-                    className="px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-semibold border border-rose-500/40 transition-colors"
+                    type="button"
                   >
                     Reject & Request Changes
                   </button>
 
                   <button
-                    type="button"
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#ff6a00] hover:bg-[#ff7f24] text-xs font-bold text-black shadow-md shadow-[#ff6a00]/30 transition-all cursor-pointer"
                     onClick={() => {
                       approveCompanyTask(selectedTask.id)
                       $selectedTaskId.set(null)
                     }}
-                    className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#ff6a00] hover:bg-[#ff7f24] text-xs font-bold text-black shadow-md shadow-[#ff6a00]/30 transition-all cursor-pointer"
+                    type="button"
                   >
                     <CheckCircle2 className="size-3.5" />
                     <span>Approve & Merge Deliverable</span>
@@ -687,35 +680,35 @@ export function CompanyView() {
                 Create Strategic Task
               </h3>
               <button
-                type="button"
-                onClick={() => setIsNewTaskModalOpen(false)}
                 className="text-slate-400 hover:text-white"
+                onClick={() => setIsNewTaskModalOpen(false)}
+                type="button"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateTask} className="space-y-3">
+            <form className="space-y-3" onSubmit={handleCreateTask}>
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Task Title</label>
                 <input
-                  type="text"
-                  required
-                  placeholder="e.g. Implement webhook listener for user auth"
-                  value={newTaskTitle}
-                  onChange={e => setNewTaskTitle(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-xs text-white focus:outline-none focus:border-[#ff6a00]"
+                  onChange={e => setNewTaskTitle(e.target.value)}
+                  placeholder="e.g. Implement webhook listener for user auth"
+                  required
+                  type="text"
+                  value={newTaskTitle}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Description</label>
                 <textarea
-                  rows={2}
-                  placeholder="Specific requirements, acceptance criteria, or target URLs..."
-                  value={newTaskDesc}
-                  onChange={e => setNewTaskDesc(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-xs text-white focus:outline-none focus:border-[#ff6a00] resize-none"
+                  onChange={e => setNewTaskDesc(e.target.value)}
+                  placeholder="Specific requirements, acceptance criteria, or target URLs..."
+                  rows={2}
+                  value={newTaskDesc}
                 />
               </div>
 
@@ -723,9 +716,9 @@ export function CompanyView() {
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Assignee</label>
                   <select
-                    value={newTaskAssignee}
-                    onChange={e => setNewTaskAssignee(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-xs text-white focus:outline-none focus:border-[#ff6a00]"
+                    onChange={e => setNewTaskAssignee(e.target.value)}
+                    value={newTaskAssignee}
                   >
                     {agents.map(a => (
                       <option key={a.id} value={a.id}>
@@ -738,9 +731,9 @@ export function CompanyView() {
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Priority</label>
                   <select
-                    value={newTaskPriority}
-                    onChange={e => setNewTaskPriority(e.target.value as CompanyTask['priority'])}
                     className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-xs text-white focus:outline-none focus:border-[#ff6a00]"
+                    onChange={e => setNewTaskPriority(e.target.value as CompanyTask['priority'])}
+                    value={newTaskPriority}
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -752,15 +745,15 @@ export function CompanyView() {
 
               <div className="pt-2 flex justify-end gap-2">
                 <button
-                  type="button"
-                  onClick={() => setIsNewTaskModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-[#1b202a] text-xs font-medium text-slate-300 hover:bg-[#262c37]"
+                  onClick={() => setIsNewTaskModalOpen(false)}
+                  type="button"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
                   className="px-5 py-2 rounded-xl bg-[#ff6a00] text-xs font-bold text-black hover:bg-[#ff7f24] shadow-md shadow-[#ff6a00]/30"
+                  type="submit"
                 >
                   Create Task
                 </button>
@@ -780,45 +773,45 @@ export function CompanyView() {
                 Hire Autonomous Agent
               </h3>
               <button
-                type="button"
-                onClick={() => setIsHireModalOpen(false)}
                 className="text-slate-400 hover:text-white"
+                onClick={() => setIsHireModalOpen(false)}
+                type="button"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            <form onSubmit={handleHireAgent} className="space-y-3">
+            <form className="space-y-3" onSubmit={handleHireAgent}>
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Agent Name</label>
                 <input
-                  type="text"
-                  required
-                  placeholder="e.g. Vulcan"
-                  value={newAgentName}
-                  onChange={e => setNewAgentName(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-xs text-white focus:outline-none focus:border-[#ff6a00]"
+                  onChange={e => setNewAgentName(e.target.value)}
+                  placeholder="e.g. Vulcan"
+                  required
+                  type="text"
+                  value={newAgentName}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Specialized Role</label>
                 <input
-                  type="text"
-                  required
-                  placeholder="e.g. DevOps & Infrastructure Sentinel"
-                  value={newAgentRole}
-                  onChange={e => setNewAgentRole(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-xs text-white focus:outline-none focus:border-[#ff6a00]"
+                  onChange={e => setNewAgentRole(e.target.value)}
+                  placeholder="e.g. DevOps & Infrastructure Sentinel"
+                  required
+                  type="text"
+                  value={newAgentRole}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Department</label>
                 <select
-                  value={newAgentDept}
-                  onChange={e => setNewAgentDept(e.target.value as CompanyAgent['department'])}
                   className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-xs text-white focus:outline-none focus:border-[#ff6a00]"
+                  onChange={e => setNewAgentDept(e.target.value as CompanyAgent['department'])}
+                  value={newAgentDept}
                 >
                   <option value="Engineering">Engineering</option>
                   <option value="Research">Research</option>
@@ -830,25 +823,25 @@ export function CompanyView() {
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Agent Soul / Persona</label>
                 <textarea
-                  rows={2}
-                  placeholder="Core responsibilities and decision rules..."
-                  value={newAgentSoul}
-                  onChange={e => setNewAgentSoul(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#0c0e12] border border-[#262c37] text-xs text-white focus:outline-none focus:border-[#ff6a00] resize-none"
+                  onChange={e => setNewAgentSoul(e.target.value)}
+                  placeholder="Core responsibilities and decision rules..."
+                  rows={2}
+                  value={newAgentSoul}
                 />
               </div>
 
               <div className="pt-2 flex justify-end gap-2">
                 <button
-                  type="button"
-                  onClick={() => setIsHireModalOpen(false)}
                   className="px-4 py-2 rounded-xl bg-[#1b202a] text-xs font-medium text-slate-300 hover:bg-[#262c37]"
+                  onClick={() => setIsHireModalOpen(false)}
+                  type="button"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
                   className="px-5 py-2 rounded-xl bg-[#ff6a00] text-xs font-bold text-black hover:bg-[#ff7f24] shadow-md shadow-[#ff6a00]/30"
+                  type="submit"
                 >
                   Onboard Agent
                 </button>
@@ -876,12 +869,12 @@ function TaskCard({
 
   return (
     <div
-      onClick={onClick}
       className={`p-3.5 rounded-xl border transition-all cursor-pointer select-none space-y-2.5 ${
         highlightReview
           ? 'bg-[#1b1c24] border-[#ff6a00]/60 hover:border-[#ff6a00] shadow-sm shadow-[#ff6a00]/20'
           : 'bg-[#0c0e12] border-[#262c37] hover:border-[#333a49] hover:bg-[#12161f]'
       }`}
+      onClick={onClick}
     >
       <div className="flex items-center justify-between">
         <span
@@ -932,5 +925,6 @@ function TaskCard({
 
 function getAgentName(id: string, agents: CompanyAgent[]): string {
   const a = agents.find(ag => ag.id === id)
+
   return a ? a.name : 'Unassigned Agent'
 }

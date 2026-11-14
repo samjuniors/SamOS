@@ -65,6 +65,7 @@ export function upsertAIEmployee(partial: Partial<AIEmployee> & { id: string }):
       artifacts: partial.artifacts ?? [],
       avatarColor: partial.avatarColor ?? getAvatarColor(current.length)
     }
+
     $aiEmployees.set([newEmployee, ...current])
   }
 }
@@ -75,22 +76,6 @@ export async function controlSubagent(
   action: 'steer' | 'stop' | 'pause' | 'resume',
   message?: string
 ): Promise<{ success: boolean; error?: string }> {
-  // Update local state optimistically
-  const current = $aiEmployees.get()
-  const employee = current.find(e => e.id === subagentId)
-  if (employee) {
-    let nextStatus: SubagentStatus = employee.status
-    if (action === 'stop') nextStatus = 'interrupted'
-    else if (action === 'pause') nextStatus = 'queued'
-    else if (action === 'resume') nextStatus = 'running'
-
-    upsertAIEmployee({
-      id: subagentId,
-      status: nextStatus,
-      thinkingSnippet: message ? `Steering guidance: "${message}"` : employee.thinkingSnippet
-    })
-  }
-
   const subagentApi = (window as unknown as {
     hermesDesktop?: {
       subagent?: {
@@ -99,15 +84,36 @@ export async function controlSubagent(
     }
   }).hermesDesktop?.subagent
 
-  if (subagentApi?.control) {
-    try {
-      return await subagentApi.control({ subagentId, action, message })
-    } catch (err) {
-      return { success: false, error: String(err) }
-    }
+  if (!subagentApi?.control) {
+    return { success: false, error: 'Hermes subagent control bridge is unavailable; no action was executed.' }
   }
 
-  return { success: true }
+  try {
+    const outcome = await subagentApi.control({ subagentId, action, message })
+
+    if (!outcome.success) {return outcome}
+
+    // State changes only after the backend acknowledges the action.
+    const employee = $aiEmployees.get().find(e => e.id === subagentId)
+
+    if (employee) {
+      let nextStatus: SubagentStatus = employee.status
+
+      if (action === 'stop') {nextStatus = 'interrupted'}
+      else if (action === 'pause') {nextStatus = 'queued'}
+      else if (action === 'resume') {nextStatus = 'running'}
+
+      upsertAIEmployee({
+        id: subagentId,
+        status: nextStatus,
+        thinkingSnippet: message ? `Steering guidance: "${message}"` : employee.thinkingSnippet
+      })
+    }
+
+    return outcome
+  } catch (err) {
+    return { success: false, error: String(err) }
+  }
 }
 
 /** Steer subagent with interactive user prompt guidance */
@@ -134,6 +140,7 @@ export function stopSubagent(subagentId: string) {
 export function recordSubagentArtifact(artifact: SubagentArtifactPayload): void {
   const current = $aiEmployees.get()
   const emp = current.find(e => e.id === artifact.subagentId)
+
   if (emp) {
     const artifacts = [artifact, ...emp.artifacts.filter(a => a.path !== artifact.path)]
     upsertAIEmployee({ id: artifact.subagentId, artifacts })
@@ -222,9 +229,10 @@ export function initSubagentTelemetryIpc(): () => void {
 
 /** Seed demo initial employees if none exist (for preview and interactive demo) */
 export function seedDemoAIEmployeesIfEmpty(): void {
-  if ($aiEmployees.get().length > 0) return
+  if ($aiEmployees.get().length > 0) {return}
 
   const now = Date.now()
+
   const sampleEmployees: AIEmployee[] = [
     {
       id: 'sub_architect_01',

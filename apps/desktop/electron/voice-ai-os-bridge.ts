@@ -11,22 +11,32 @@
 
 import fs from 'fs'
 import path from 'path'
-import { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, type NativeImage, Tray } from 'electron'
+
+import type { app, BrowserWindow, globalShortcut, ipcMain} from 'electron';
+import { Menu, nativeImage, type NativeImage, Tray } from 'electron'
+
+import { resolveCuaLaunchTarget } from './cua-launch-policy'
 
 export function parseEnvFile(content: string): Record<string, string> {
   const result: Record<string, string> = {}
+
   for (const line of content.split(/\r?\n/)) {
     const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
+
+    if (!trimmed || trimmed.startsWith('#')) {continue}
     const eqIdx = trimmed.indexOf('=')
-    if (eqIdx === -1) continue
+
+    if (eqIdx === -1) {continue}
     const key = trimmed.slice(0, eqIdx).trim()
     let val = trimmed.slice(eqIdx + 1).trim()
+
     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
       val = val.slice(1, -1)
     }
+
     result[key] = val
   }
+
   return result
 }
 
@@ -38,15 +48,20 @@ export function readEnvConfig(): Record<string, string> {
     path.resolve(process.cwd(), '../../.env'),
     path.resolve(process.env.USERPROFILE || '', '.hermes/.env')
   ]
+
   const config: Record<string, string> = {}
+
   for (const candidate of candidates) {
     try {
       if (fs.existsSync(candidate)) {
         const parsed = parseEnvFile(fs.readFileSync(candidate, 'utf-8'))
         Object.assign(config, parsed)
       }
-    } catch {}
+    } catch {
+      // Unreadable optional env files must not block startup.
+    }
   }
+
   return config
 }
 
@@ -145,6 +160,7 @@ export function createVoiceStateTrayIcon(state: VoiceState, isDark = true): Nati
   </svg>`
 
   const dataUrl = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
+
   return nativeImage.createFromDataURL(dataUrl)
 }
 
@@ -158,6 +174,7 @@ function queryStartupStatus(appApi: typeof app): StartupStatus {
       path: process.execPath,
       args: ['--boot-startup']
     })
+
     return {
       enabled: settings.openAtLogin,
       openAsHidden: Boolean((settings as unknown as Record<string, unknown>).openAsHidden),
@@ -179,13 +196,16 @@ function updateStartupStatus(appApi: typeof app, enable: boolean): StartupStatus
       path: process.execPath,
       args: ['--boot-startup']
     }
+
     if (process.platform === 'darwin') {
       opts.openAsHidden = true
     }
+
     appApi.setLoginItemSettings(opts as Parameters<typeof appApi.setLoginItemSettings>[0])
   } catch {
     // best-effort login item write
   }
+
   return queryStartupStatus(appApi)
 }
 
@@ -194,6 +214,7 @@ function updateStartupStatus(appApi: typeof app, enable: boolean): StartupStatus
 export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridgeController {
   const log = deps.log ?? ((msg: string) => console.log(msg))
   let currentVoiceState: VoiceState = 'IDLE'
+  let activeTypingProcess: { kill: () => boolean } | null = null
   let currentWindowMode: ShellWindowMode = 'canvas'
   let isMicrophoneMuted = false
   let tray: Tray | null = null
@@ -212,6 +233,11 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
   // 2. Emergency Interrupt (Barge-in / Stop)
   const handleInterrupt = async () => {
     log('[voice-bridge] Emergency interrupt triggered (barge-in / ESC)')
+    // Cancel live SendKeys work as well as voice playback. ESC is not merely
+    // a visual reset: pending text entry must not continue in another window.
+    activeTypingProcess?.kill()
+    activeTypingProcess = null
+    broadcastToAllWindows('hermes:cua:aborted', { timestamp: Date.now() })
     broadcastToAllWindows('hermes:voice:interrupt', { timestamp: Date.now() })
 
     // Cancel active playback or automation, return to IDLE or LISTENING
@@ -229,6 +255,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         escapeShortcutActive = deps.globalShortcut.register('Escape', () => {
           void handleInterrupt()
         })
+
         if (escapeShortcutActive) {
           log('[voice-bridge] Registered Escape emergency stop shortcut')
         }
@@ -242,6 +269,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
       } catch {
         // ignore
       }
+
       escapeShortcutActive = false
       log('[voice-bridge] Unregistered Escape emergency stop shortcut')
     }
@@ -249,6 +277,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
 
   const toggleHudSummon = () => {
     const hud = deps.getHudWindow()
+
     if (hud && !hud.isDestroyed() && hud.isVisible()) {
       deps.closeHudWindow()
       setWindowMode('canvas')
@@ -267,9 +296,11 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
       try {
         if (!deps.globalShortcut.isRegistered(chord)) {
           const registered = deps.globalShortcut.register(chord, toggleHudSummon)
+
           if (registered) {
             summonShortcutRegistered = chord
             log(`[voice-bridge] Registered HUD summon shortcut on ${chord}`)
+
             return
           }
         }
@@ -277,6 +308,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         log(`[voice-bridge] Failed attempting chord ${chord}: ${err}`)
       }
     }
+
     log('[voice-bridge] Warning: Could not bind global HUD summon shortcut')
   }
 
@@ -287,6 +319,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     }
 
     const stateLabel = VOICE_STATE_COLORS[currentVoiceState]?.label ?? 'Idle'
+
     const contextMenu = Menu.buildFromTemplate([
       { label: `Hermes Voice: ${stateLabel}`, enabled: false },
       { type: 'separator' },
@@ -320,6 +353,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         click: () => {
           deps.restoreMainWindow()
           const mainWin = deps.getMainWindow()
+
           if (mainWin && !mainWin.isDestroyed()) {
             mainWin.webContents.send('hermes:navigate:settings')
           }
@@ -330,6 +364,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         click: () => {
           deps.restoreMainWindow()
           const mainWin = deps.getMainWindow()
+
           if (mainWin && !mainWin.isDestroyed()) {
             mainWin.webContents.send('hermes:open-updates')
           }
@@ -352,6 +387,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     if (!tray || tray.isDestroyed()) {
       return
     }
+
     const icon = createVoiceStateTrayIcon(currentVoiceState)
     tray.setImage(icon)
     updateTrayMenu()
@@ -386,6 +422,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     if (currentVoiceState === state) {
       return
     }
+
     currentVoiceState = state
     syncTrayIcon()
     updateEmergencyEscape(state)
@@ -397,30 +434,42 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     if (currentWindowMode === mode) {
       return
     }
+
     currentWindowMode = mode
 
     switch (mode) {
-      case 'hud':
+      case 'hud': {
         deps.openHudWindow(null, null)
         const mainWin = deps.getMainWindow()
+
         if (mainWin && !mainWin.isDestroyed()) {
           mainWin.hide()
         }
+
         break
+      }
+
       case 'canvas':
         deps.closeHudWindow()
         deps.restoreMainWindow()
+
         break
+
       case 'cua_overlay':
         deps.openCuaOverlayWindow?.()
+
         break
-      case 'minimized':
+
+      case 'minimized': {
         deps.closeHudWindow()
         const win = deps.getMainWindow()
+
         if (win && !win.isDestroyed()) {
           win.hide()
         }
+
         break
+      }
     }
 
     broadcastToAllWindows('hermes:system:windowModeChanged', mode)
@@ -461,6 +510,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     if (state.voiceState) {
       applyVoiceState(state.voiceState)
     }
+
     if (tray && !tray.isDestroyed() && state.tooltip) {
       tray.setToolTip(state.tooltip)
     }
@@ -469,26 +519,28 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
   // ── 7. Computer Use Agent (CUA) Desktop Automation IPC ───────────────────────
   deps.ipcMain.handle('hermes:cua:launchApp', async (_event, appName: string, args: string[] = []) => {
     log(`[voice-bridge] CUA launchApp: ${appName}`)
+
     try {
-      const { spawn } = await import('child_process')
-      const validApps: Record<string, string> = {
-        notepad: 'notepad.exe',
-        'notepad.exe': 'notepad.exe',
-        calc: 'calc.exe',
-        calculator: 'calc.exe',
-        'calc.exe': 'calc.exe',
-        explorer: 'explorer.exe',
-        'explorer.exe': 'explorer.exe',
-        cmd: 'cmd.exe',
-        'cmd.exe': 'cmd.exe',
-        powershell: 'powershell.exe',
-        paint: 'mspaint.exe',
-        mspaint: 'mspaint.exe',
-        edge: 'msedge.exe',
-        chrome: 'chrome.exe'
+      const targetBinary = resolveCuaLaunchTarget(appName, args)
+
+      if (!targetBinary) {
+        return { success: false, error: 'This app or its arguments are not approved for voice computer-use.' }
       }
-      const targetBinary = validApps[appName.toLowerCase().trim()] || appName.trim()
-      const child = spawn(targetBinary, args, { detached: true, stdio: 'ignore', shell: true })
+
+      const { spawn } = await import('node:child_process')
+
+      const child = spawn(targetBinary, [], {
+        detached: true,
+        stdio: 'ignore',
+        shell: false
+      })
+
+      // Node emits spawn errors asynchronously. Do not claim success until
+      // the OS has accepted the exact allowlisted executable.
+      await new Promise<void>((resolve, reject) => {
+        child.once('spawn', () => resolve())
+        child.once('error', reject)
+      })
       child.unref()
 
       applyVoiceState('CUA_ACTIVE')
@@ -498,37 +550,72 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         timestamp: Date.now(),
         text: `Launched ${targetBinary}`
       })
+
       return { success: true, pid: child.pid }
     } catch (err: any) {
       log(`[voice-bridge] CUA launchApp error: ${err}`)
+
       return { success: false, error: err.message }
     }
   })
 
   deps.ipcMain.handle('hermes:cua:typeText', async (_event, text: string) => {
-    log(`[voice-bridge] CUA typeText: ${text}`)
+    if (typeof text !== 'string' || !text.length || text.length > 4000) {
+      return { success: false, error: 'Text entry must be between 1 and 4000 characters.' }
+    }
+
     try {
-      const { exec } = await import('child_process')
-      // Escape for PowerShell WScript.Shell SendKeys
-      const safeText = text.replace(/([+^%~{}()\[\]\\])/g, '{$1}')
-      const psScript = `$wshell = New-Object -ComObject wscript.shell; Start-Sleep -Milliseconds 300; $wshell.SendKeys('${safeText}')`
-      exec(`powershell -NoProfile -Command "${psScript}"`)
+      const { execFile } = await import('node:child_process')
+      // Keep the user's text out of shell command strings entirely. Encode
+      // UTF-16LE data, then escape only the SendKeys meta-characters in PS.
+      const textBase64 = Buffer.from(text, 'utf16le').toString('base64')
+
+      const psScript = [
+        '$wshell = New-Object -ComObject WScript.Shell',
+        `$text = [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('${textBase64}'))`,
+        "$safe = $text -replace '([+^%~{}()\\[\\]])', '{$1}'",
+        '$wshell.SendKeys($safe)'
+      ].join('; ')
+
+      const encoded = Buffer.from(psScript, 'utf16le').toString('base64')
+
+      await new Promise<void>((resolve, reject) => {
+        const child = execFile('powershell.exe', [
+          '-NoProfile', '-NonInteractive', '-EncodedCommand', encoded
+        ], { windowsHide: true, timeout: 15000 }, error => {
+          if (activeTypingProcess === child) {
+            activeTypingProcess = null
+          }
+
+          if (error) {
+            reject(error)
+          } else {
+            resolve()
+          }
+        })
+
+        activeTypingProcess = child
+      })
 
       applyVoiceState('CUA_ACTIVE')
       broadcastToAllWindows('hermes:cua:actionStart', {
         sessionId: 'cua_live',
         action: 'type',
         timestamp: Date.now(),
-        text: `Typed "${text}"`
+        text: 'Completed requested Windows text entry'
       })
+
       return { success: true }
     } catch (err: any) {
+      log(`[voice-bridge] CUA typeText failed: ${err}`)
+
       return { success: false, error: err.message }
     }
   })
 
   deps.ipcMain.handle('hermes:cua:openBrowserPopup', async (_event, url: string) => {
     log(`[voice-bridge] CUA openBrowserPopup: ${url}`)
+
     try {
       const popup = new deps.BrowserWindow({
         width: 1240,
@@ -540,6 +627,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
           contextIsolation: true
         }
       })
+
       popup.loadURL(url)
 
       broadcastToAllWindows('hermes:cua:actionStart', {
@@ -548,6 +636,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         timestamp: Date.now(),
         text: `Opened browser popup: ${url}`
       })
+
       return { success: true }
     } catch (err: any) {
       return { success: false, error: err.message }
@@ -558,6 +647,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     try {
       const { shell } = await import('electron')
       await shell.openExternal(url)
+
       return { success: true }
     } catch (err: any) {
       return { success: false, error: err.message }
@@ -566,6 +656,8 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
 
   deps.ipcMain.handle('hermes:cua:abort', async () => {
     log('[voice-bridge] CUA abort requested')
+    activeTypingProcess?.kill()
+    activeTypingProcess = null
     broadcastToAllWindows('hermes:cua:aborted', { timestamp: Date.now() })
     applyVoiceState('IDLE')
   })
@@ -588,6 +680,7 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
     },
     broadcastTranscript: (transcript: VoiceTranscriptPayload) => {
       broadcastToAllWindows('hermes:voice:transcript', transcript)
+
       if (transcript.isFinal) {
         applyVoiceState('THINKING')
       }
@@ -599,16 +692,20 @@ export function createVoiceAiOsBridge(deps: VoiceAiOsBridgeDeps): VoiceAiOsBridg
         } catch {
           // ignore
         }
+
         summonShortcutRegistered = null
       }
+
       if (escapeShortcutActive) {
         try {
           deps.globalShortcut.unregister('Escape')
         } catch {
           // ignore
         }
+
         escapeShortcutActive = false
       }
+
       if (tray && !tray.isDestroyed()) {
         tray.destroy()
         tray = null

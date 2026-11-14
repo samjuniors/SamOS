@@ -1,0 +1,130 @@
+name: SamOS Windows desktop checks
+
+on:
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/shared/**'
+      - 'agent/**'
+      - 'tui_gateway/**'
+      - 'scripts/ci/samos-prune-guard.mjs'
+      - 'pm/lock.json'
+      - 'pnpm-lock.yaml'
+      - 'gateway/**'
+      - 'scripts/build/**'
+      - 'scripts/bundles/**'
+      - 'docs/SAMOS_*.md'
+      - '.github/workflows/samos-windows.yml'
+      - 'package.json'
+      - 'pnpm-*.yaml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: samos-windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Lint remains a required, independent gate. A formatting failure must not
+  # prevent us from collecting Windows UI, runtime, and bundle evidence.
+  windows-lint:
+    name: Windows desktop lint
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out SamOS
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pinned repo toolchain
+        uses: ./.github/actions/setup-pm
+        with:
+          toolchain: all
+          extras: '[]'
+          test-environment: 'true'
+
+      - name: Install locked JavaScript dependencies
+        shell: pwsh
+        run: just js-install
+
+      - name: Lint desktop and Electron
+        shell: pwsh
+        run: pnpm --dir apps/desktop run lint
+
+  windows-electron:
+    name: Windows Electron build and unpacked package
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out SamOS
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pinned repo toolchain
+        uses: ./.github/actions/setup-pm
+        with:
+          toolchain: all
+          extras: '[]'
+          test-environment: 'true'
+
+      - name: Guard retained runtime and product scope
+        shell: pwsh
+        run: node scripts/ci/samos-prune-guard.mjs
+
+      - name: Verify Electron-only payload staging contract
+        shell: pwsh
+        run: python -m pytest -q tests/scripts/test_samos_windows_bundle_profile.py
+
+      - name: Install locked JavaScript dependencies
+        shell: pwsh
+        run: just js-install
+
+      - name: Prepare locked Electron
+        shell: pwsh
+        run: just electron-runtime
+
+      - name: Typecheck desktop and Electron
+        shell: pwsh
+        run: pnpm --dir apps/desktop run typecheck
+
+      - name: Run UI tests
+        shell: pwsh
+        run: pnpm --dir apps/desktop run test:ui
+
+      - name: Run Electron unit tests
+        shell: pwsh
+        run: pnpm --dir apps/desktop run test:desktop:platforms
+
+      # Tests and typechecking use the checkout, not auto-fixed transient files.
+      # The SamOS package includes the Python Hermes agent, not just an empty UI shell.
+      - name: Stage lean agent and package unsigned unpacked Windows x64 build
+        working-directory: apps/desktop
+        shell: pwsh
+        run: pnpm run pack:samos:unpacked
+
+      - name: Record agent-inclusive unpacked size and artifact location
+        shell: pwsh
+        run: |
+          $paths = @(Get-ChildItem -Path apps/desktop/release -Directory -Filter "*unpacked")
+          if ($paths.Count -eq 0) { throw "No unpacked Windows build found" }
+          $rows = foreach ($path in $paths) {
+            $size = (Get-ChildItem -LiteralPath $path.FullName -Recurse -File | Measure-Object Length -Sum).Sum
+            [pscustomobject]@{ profile = "samos-agent-inclusive-electron-only"; directory = $path.Name; bytes = [int64]$size; mib = [math]::Round($size / 1MB, 1) }
+          }
+          $rows | ConvertTo-Json -Depth 4 | Set-Content -Path samos-windows-size.json
+          $rows | Format-Table | Out-String | Add-Content -Path $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload size report only
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: samos-windows-size-${{ github.run_attempt }}
+          path: samos-windows-size.json
+          if-no-files-found: ignore
+          retention-days: 14
