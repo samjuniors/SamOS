@@ -150,9 +150,9 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
 
           {import.meta.env.DEV && (
             <button
+              aria-label="Create a local sample only; no actual agent execution"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors"
               onClick={handleSpawnDemoEmployee}
-              aria-label="Create a local sample only; no actual agent execution"
               type="button"
             >
               <Bot className="size-3.5" />

@@ -205,10 +205,10 @@ export function CompanyView() {
 
           {/* Autonomous Heartbeat Runner */}
           <button
+            aria-label="Check local coordination status (no real Paperclip execution)"
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#1b202a] hover:bg-[#262c37] border border-[#ff6a00]/40 text-xs font-medium text-slate-200 transition-all cursor-pointer shadow-sm hover:border-[#ff6a00]"
             disabled={isHeartbeatRunning}
             onClick={handleTriggerHeartbeat}
-            aria-label="Check local coordination status (no real Paperclip execution)"
             type="button"
           >
             <RefreshCw
@@ -219,9 +219,9 @@ export function CompanyView() {
 
           {/* Quick Onboarding / Edit Trigger */}
           <button
+            aria-label="Reconfigure Company Settings & Goals"
             className="p-2 rounded-xl bg-[#0c0e12] hover:bg-[#1b202a] border border-[#262c37] text-slate-400 hover:text-white transition-colors cursor-pointer"
             onClick={openCompanyOnboarding}
-            aria-label="Reconfigure Company Settings & Goals"
             type="button"
           >
             <Wrench className="size-3.5 text-[#ff7f24]" />

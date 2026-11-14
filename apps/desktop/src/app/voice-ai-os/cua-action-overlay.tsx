@@ -257,9 +257,9 @@ export function CuaActionOverlay({
       {/* Quick Action Dock for Live Desktop Tasks & YouTube (60-30-10 Palette) */}
       <div className="absolute top-16 left-1/2 -translate-x-1/2 flex items-center gap-2 z-[10010] pointer-events-auto flex-wrap justify-center max-w-2xl px-2">
         <button
+          aria-label="Open Notepad on your PC and type simulated greeting"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/15 hover:bg-[#ff6a00]/25 text-[#ff7f24] border border-[#ff6a00]/40 text-xs font-semibold backdrop-blur-md shadow-lg shadow-[#ff6a00]/15 transition-all cursor-pointer"
           onClick={handleLaunchNotepad}
-          aria-label="Open Notepad on your PC and type simulated greeting"
           type="button"
         >
           <FileText className="size-3.5 text-[#ff6a00]" />
@@ -267,9 +267,9 @@ export function CuaActionOverlay({
         </button>
 
         <button
+          aria-label="Open Calculator on your PC"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14171f] hover:bg-[#1b202a] text-slate-200 border border-[#262c37] text-xs font-semibold backdrop-blur-md shadow-lg transition-all cursor-pointer"
           onClick={handleLaunchCalc}
-          aria-label="Open Calculator on your PC"
           type="button"
         >
           <Calculator className="size-3.5 text-[#ff7f24]" />
@@ -277,9 +277,9 @@ export function CuaActionOverlay({
         </button>
 
         <button
+          aria-label="Open Windows File Explorer"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14171f] hover:bg-[#1b202a] text-slate-200 border border-[#262c37] text-xs font-semibold backdrop-blur-md shadow-lg transition-all cursor-pointer"
           onClick={handleLaunchExplorer}
-          aria-label="Open Windows File Explorer"
           type="button"
         >
           <Folder className="size-3.5 text-[#9aa5b8]" />
@@ -287,9 +287,9 @@ export function CuaActionOverlay({
         </button>
 
         <button
+          aria-label="Simulate Click & Drag with visual ripple"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/15 hover:bg-[#ff6a00]/25 text-[#ff7f24] border border-[#ff6a00]/40 text-xs font-semibold backdrop-blur-md shadow-lg shadow-[#ff6a00]/15 transition-all cursor-pointer"
           onClick={handleSimulateDragClick}
-          aria-label="Simulate Click & Drag with visual ripple"
           type="button"
         >
           <MousePointer className="size-3.5 text-[#ff6a00]" />
@@ -297,9 +297,9 @@ export function CuaActionOverlay({
         </button>
 
         <button
+          aria-label="Open YouTube in Workspace Browser"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14171f] hover:bg-[#1b202a] text-slate-200 border border-[#262c37] text-xs font-semibold backdrop-blur-md shadow-lg transition-all cursor-pointer"
           onClick={() => handleOpenYouTube(false)}
-          aria-label="Open YouTube in Workspace Browser"
           type="button"
         >
           <Tv className="size-3.5 text-[#ff6a00]" />
@@ -307,9 +307,9 @@ export function CuaActionOverlay({
         </button>
 
         <button
+          aria-label="Open YouTube in Dedicated Popup Window"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/20 hover:bg-[#ff6a00]/30 text-[#ff944d] border border-[#ff6a00]/50 text-xs font-semibold backdrop-blur-md shadow-lg shadow-[#ff6a00]/20 transition-all cursor-pointer"
           onClick={() => handleOpenYouTube(true)}
-          aria-label="Open YouTube in Dedicated Popup Window"
           type="button"
         >
           <ExternalLink className="size-3.5 text-[#ff7f24]" />

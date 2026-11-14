@@ -205,6 +205,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
             </span>
           </div>
           <button
+            aria-label="Discard in-app UI overrides and restore values strictly from .env"
             onClick={handleResetToEnv}
             style={{
               background: 'rgba(255, 255, 255, 0.08)',
@@ -218,7 +219,6 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
               alignItems: 'center',
               gap: '4px'
             }}
-            aria-label="Discard in-app UI overrides and restore values strictly from .env"
             type="button"
           >
             <RotateCcw size={11} /> Reset to .env Defaults
