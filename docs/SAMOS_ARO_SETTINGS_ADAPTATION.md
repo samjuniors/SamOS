@@ -28,6 +28,14 @@ Status: SOURCE ADAPTATION; **NOT WINDOWS ACCEPTED OR RELEASED**.
 - Existing SamOS provider routes, Python credentials/storage, profile scoping and env precedence remain the authority.
 - Theme size/shape/contrast must be compared in a live Windows build at 100%, 125% and 150%; source adaptation alone is not visual acceptance.
 
+## Windows voice-shell entrypoint integration (2026-11-14)
+
+- Root cause of the visual mismatch: SamOS's default `VoiceAiOsRoot` always opened `AiProviderSettingsModal` for the Settings gear. The Aro-derived `SettingsView` was only reachable from the opt-in classic chat shell, not the shipped voice-first UI.
+- The primary Settings gear now lazily mounts the existing complete Settings overlay inside a dedicated `MemoryRouter`, with the same query, i18n, theme, haptics and tooltip providers used by classic chat. The voice shell remains mounted underneath and its global URL is not rewritten.
+- The provider badge opens the full Providers page directly. Sofia's separate voice-engine `.env`/offline control remains available through the voice setup notice and the footer voice-engine control; those two credential systems are not silently merged.
+- Verified on DESKTOP-AND1FUJ with the built Electron renderer: overview displays Aro-style sidebar, grouped cards and theme selector; Providers sidebar expands to Accounts, API keys, Custom Endpoints and Local Models. No renderer exception seen when navigating. This verifies UI routing and appearance, **not a real provider login or voice model call**.
+- Two focused route/close regression tests (`voice-os-settings-panel.test.tsx`) pass and the changed components pass ESLint. Source TypeScript passed before the final button-label correction; rerun full checks after it.
+
 ## Verification
 
 - Imported Aro-oriented tests cover contextual navigation, credential grouping, the compact theme toggle and config-import validation.

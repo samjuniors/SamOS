@@ -21,7 +21,7 @@ import {
   Wrench,
   Zap
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 
 import { $aiProviderConfig } from '@/store/ai-provider-config'
 import { $companyTasks } from '@/store/company-state'
@@ -51,6 +51,10 @@ import { SelfRepairModal } from './self-repair-modal'
 import type { ShellWindowMode } from './types'
 import { VoiceHudOrb } from './voice-hud-orb'
 
+const VoiceOsSettingsPanel = lazy(async () => ({
+  default: (await import('./voice-os-settings-panel')).VoiceOsSettingsPanel
+}))
+
 interface VoiceAiOsRootProps {
   initialMode?: ShellWindowMode
   className?: string
@@ -64,7 +68,8 @@ export function VoiceAiOsRoot({
   const activeTab = useStore($activeWorkspaceTab)
   const systemHealth = useStore($systemHealth)
   const [systemLoad, setSystemLoad] = useState({ cpu: 14, ramGb: 4.2 })
-  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [voiceEngineSettingsOpen, setVoiceEngineSettingsOpen] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<'overview' | 'providers' | null>(null)
   const [textInput, setTextInput] = useState('')
 
   const voiceState = useStore($voiceState)
@@ -93,6 +98,11 @@ export function VoiceAiOsRoot({
   useEffect(() => {
     const handleGlobalShortcuts = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Settings and voice-engine overlays own Escape while open.
+        if (settingsTab !== null || voiceEngineSettingsOpen) {
+          return
+        }
+
         if (voiceState !== 'IDLE') {
           void interruptVoice()
         }
@@ -105,7 +115,7 @@ export function VoiceAiOsRoot({
     window.addEventListener('keydown', handleGlobalShortcuts)
 
     return () => window.removeEventListener('keydown', handleGlobalShortcuts)
-  }, [voiceState])
+  }, [settingsTab, voiceEngineSettingsOpen, voiceState])
 
   // Total active subagents and cost calculation
   const totalTokens = employees.reduce((acc, curr) => acc + curr.inputTokens + curr.outputTokens, 0)
@@ -159,11 +169,11 @@ export function VoiceAiOsRoot({
             <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
           </div>
 
-          {/* AI Engine Provider Pill */}
+          {/* The provider pill jumps into the full Aro-style Providers page. */}
           <button
-            aria-label="Configure AI Engine & API Keys (Cloud / Offline)"
+            aria-label="Open model providers and API keys"
             className="hidden md:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1b202a] hover:bg-[#262c37] border border-[#262c37] text-[11px] font-mono text-[#9aa5b8] hover:text-white transition-colors cursor-pointer"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setSettingsTab('providers')}
             type="button"
           >
             {aiConfig.mode === 'offline' ? (
@@ -249,11 +259,11 @@ export function VoiceAiOsRoot({
             </button>
           </div>
 
-          {/* Settings Trigger */}
+          {/* Open the shared Aro-derived Settings panel, not the voice-only modal. */}
           <button
-            aria-label="Settings"
+            aria-label="Open SamOS Settings"
             className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setSettingsTab('overview')}
             type="button"
           >
             <Settings className="size-3.5" />
@@ -280,10 +290,10 @@ export function VoiceAiOsRoot({
           </div>
           <button
             className="px-3 py-1 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs transition-colors shrink-0 ml-3 shadow-md cursor-pointer"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setVoiceEngineSettingsOpen(true)}
             type="button"
           >
-            Configure Provider
+            Configure Voice Engine
           </button>
         </div>
       )}
@@ -538,8 +548,9 @@ export function VoiceAiOsRoot({
           </button>
 
           <button
+            aria-label="Configure Sofia voice engine"
             className="hover:text-slate-100 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#1b202a] hover:bg-[#262c37] border border-[#262c37] transition-colors cursor-pointer"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => setVoiceEngineSettingsOpen(true)}
             type="button"
           >
             {aiConfig.mode === 'offline' ? (
@@ -552,8 +563,18 @@ export function VoiceAiOsRoot({
         </div>
       </footer>
 
-      {/* AI Provider & Engine Settings Modal */}
-      <AiProviderSettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {/* The primary gear opens the same Aro-derived full settings layout as classic chat. */}
+      {settingsTab !== null && (
+        <Suspense fallback={<div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#101318] text-sm text-slate-200" role="status">Opening SamOS Settings…</div>}>
+          <VoiceOsSettingsPanel initialTab={settingsTab} onClose={() => setSettingsTab(null)} />
+        </Suspense>
+      )}
+
+      {/* Sofia's independent voice-engine settings remain available separately. */}
+      <AiProviderSettingsModal
+        isOpen={voiceEngineSettingsOpen}
+        onClose={() => setVoiceEngineSettingsOpen(false)}
+      />
 
       {/* Founder Autonomous Self-Repair & Diagnostics Modal */}
       <SelfRepairModal />
