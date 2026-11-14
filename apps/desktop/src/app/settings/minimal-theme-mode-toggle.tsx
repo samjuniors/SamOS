@@ -44,7 +44,6 @@ export function MinimalThemeModeToggle() {
                 triggerHaptic('crisp')
               }
             }}
-            title={name}
             type="button"
           >
             <Icon aria-hidden className="size-4" />
