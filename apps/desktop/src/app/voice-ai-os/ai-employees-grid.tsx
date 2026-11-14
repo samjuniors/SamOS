@@ -152,7 +152,7 @@ export function AIEmployeesGrid({ className = '' }: AIEmployeesGridProps) {
             <button
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-xs transition-colors"
               onClick={handleSpawnDemoEmployee}
-              title="Create a local sample only; no actual agent execution"
+              aria-label="Create a local sample only; no actual agent execution"
               type="button"
             >
               <Bot className="size-3.5" />
@@ -386,7 +386,6 @@ function EmployeeCard({
             aria-label="Copy sandbox path"
             className="p-1 hover:text-white text-slate-400 rounded shrink-0 transition-colors"
             onClick={onCopyPath}
-            title="Copy sandbox path"
             type="button"
           >
             {copiedId === employee.id ? (
@@ -479,7 +478,6 @@ function EmployeeCard({
                 aria-label="Pause worker"
                 className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
                 onClick={() => pauseSubagent(employee.id)}
-                title="Pause worker"
                 type="button"
               >
                 <Pause className="size-3.5" />
@@ -489,7 +487,6 @@ function EmployeeCard({
                 aria-label="Resume worker"
                 className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
                 onClick={() => resumeSubagent(employee.id)}
-                title="Resume worker"
                 type="button"
               >
                 <Play className="size-3.5" />
@@ -501,7 +498,6 @@ function EmployeeCard({
               className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 disabled:opacity-40 transition-colors"
               disabled={!isRunning}
               onClick={() => stopSubagent(employee.id)}
-              title="Stop worker"
               type="button"
             >
               <Square className="size-3.5" />

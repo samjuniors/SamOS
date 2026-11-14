@@ -204,7 +204,7 @@ export function BrowserWorkspace() {
             $activeTabId.set(newTab.id)
             $browserCurrentUrl.set(newTab.url)
           }}
-          title="Open New Tab"
+          aria-label="Open New Tab"
           type="button"
         >
           <Plus className="size-4" />
@@ -218,7 +218,7 @@ export function BrowserWorkspace() {
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
             disabled={historyIndex <= 0}
             onClick={handleBack}
-            title="Back"
+            aria-label="Back"
             type="button"
           >
             <ArrowLeft className="size-4" />
@@ -227,7 +227,7 @@ export function BrowserWorkspace() {
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
             disabled={historyIndex >= history.length - 1}
             onClick={handleForward}
-            title="Forward"
+            aria-label="Forward"
             type="button"
           >
             <ArrowRight className="size-4" />
@@ -237,7 +237,7 @@ export function BrowserWorkspace() {
               isLoading ? 'animate-spin text-[#ff6a00]' : ''
             }`}
             onClick={handleReload}
-            title="Reload page"
+            aria-label="Reload page"
             type="button"
           >
             <RefreshCw className="size-4" />
@@ -245,7 +245,7 @@ export function BrowserWorkspace() {
           <button
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors cursor-pointer"
             onClick={() => handleNavigate('https://www.google.com')}
-            title="Home"
+            aria-label="Home"
             type="button"
           >
             <Home className="size-4" />
@@ -279,7 +279,7 @@ export function BrowserWorkspace() {
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[#1b202a] transition-colors cursor-pointer ${item.color}`}
                 key={item.name}
                 onClick={() => handleNavigate(item.url)}
-                title={`Open ${item.name}`}
+                aria-label={`Open ${item.name}`}
                 type="button"
               >
                 <Icon className="size-3.5" />
@@ -294,7 +294,7 @@ export function BrowserWorkspace() {
           <button
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#ff6a00]/15 text-[#ff7f24] hover:bg-[#ff6a00]/25 border border-[#ff6a00]/40 transition-colors shadow-sm shadow-[#ff6a00]/15 cursor-pointer"
             onClick={handleOpenPopup}
-            title="Pop out into a dedicated floating window"
+            aria-label="Pop out into a dedicated floating window"
             type="button"
           >
             <Maximize2 className="size-3.5" />
@@ -303,7 +303,7 @@ export function BrowserWorkspace() {
           <button
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors cursor-pointer"
             onClick={handleOpenSystem}
-            title="Open in System Browser"
+            aria-label="Open in System Browser"
             type="button"
           >
             <ExternalLink className="size-4" />

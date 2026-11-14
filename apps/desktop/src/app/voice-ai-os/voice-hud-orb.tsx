@@ -264,7 +264,6 @@ export function VoiceHudOrb({
                 e.stopPropagation()
                 toggleMicrophoneMute()
               }}
-              title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
               type="button"
             >
               {isMuted ? <MicOff className="size-3.5" /> : <Mic className="size-3.5" />}
@@ -280,7 +279,6 @@ export function VoiceHudOrb({
                 setIsExpanded(prev => !prev)
                 onExpandTranscript?.()
               }}
-              title={isExpanded ? 'Hide Transcript' : 'Show Live Transcript'}
               type="button"
             >
               {isExpanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
@@ -295,7 +293,6 @@ export function VoiceHudOrb({
                   e.stopPropagation()
                   void interruptVoice()
                 }}
-                title="Emergency Interrupt (ESC)"
                 type="button"
               >
                 <Square className="size-3.5 fill-current" />
