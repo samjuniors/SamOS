@@ -141,9 +141,9 @@ export function VoiceAiOsRoot({
 
           {/* Autonomous Self-Repair Sentinel Pill */}
           <button
+            aria-label="Autonomous Self-Repair Sentinel - Click to inspect or run full system diagnostics"
             className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1b202a] hover:bg-[#262c37] border border-[#ff6a00]/40 text-[11px] font-mono text-[#ff7f24] transition-all cursor-pointer shadow-sm shadow-[#ff6a00]/15"
             onClick={openSelfRepairModal}
-            aria-label="Autonomous Self-Repair Sentinel - Click to inspect or run full system diagnostics"
             type="button"
           >
             <Wrench className="size-3 text-[#ff6a00] animate-pulse" />
@@ -161,9 +161,9 @@ export function VoiceAiOsRoot({
 
           {/* AI Engine Provider Pill */}
           <button
+            aria-label="Configure AI Engine & API Keys (Cloud / Offline)"
             className="hidden md:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1b202a] hover:bg-[#262c37] border border-[#262c37] text-[11px] font-mono text-[#9aa5b8] hover:text-white transition-colors cursor-pointer"
             onClick={() => setSettingsOpen(true)}
-            aria-label="Configure AI Engine & API Keys (Cloud / Offline)"
             type="button"
           >
             {aiConfig.mode === 'offline' ? (
@@ -528,9 +528,9 @@ export function VoiceAiOsRoot({
 
         <div className="flex items-center gap-2 text-[11px] font-mono text-[#9aa5b8] shrink-0">
           <button
+            aria-label="Autonomous Self-Repair Sentinel"
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1b202a] hover:bg-[#262c37] border border-[#262c37] hover:border-[#ff6a00]/40 text-[#ff7f24] transition-colors cursor-pointer"
             onClick={openSelfRepairModal}
-            aria-label="Autonomous Self-Repair Sentinel"
             type="button"
           >
             <Wrench className="size-3 text-[#ff6a00]" />

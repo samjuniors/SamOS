@@ -192,6 +192,7 @@ export function BrowserWorkspace() {
 
         {/* New Tab Button */}
         <button
+          aria-label="Open New Tab"
           className="p-1 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors ml-1 cursor-pointer"
           onClick={() => {
             const newTab: BrowserTab = {
@@ -204,7 +205,6 @@ export function BrowserWorkspace() {
             $activeTabId.set(newTab.id)
             $browserCurrentUrl.set(newTab.url)
           }}
-          aria-label="Open New Tab"
           type="button"
         >
           <Plus className="size-4" />
@@ -215,37 +215,37 @@ export function BrowserWorkspace() {
       <div className="flex items-center gap-2 px-3 py-2 bg-[#14171f] border-b border-[#262c37] shrink-0">
         <div className="flex items-center gap-1">
           <button
+            aria-label="Back"
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
             disabled={historyIndex <= 0}
             onClick={handleBack}
-            aria-label="Back"
             type="button"
           >
             <ArrowLeft className="size-4" />
           </button>
           <button
+            aria-label="Forward"
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
             disabled={historyIndex >= history.length - 1}
             onClick={handleForward}
-            aria-label="Forward"
             type="button"
           >
             <ArrowRight className="size-4" />
           </button>
           <button
+            aria-label="Reload page"
             className={`p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors cursor-pointer ${
               isLoading ? 'animate-spin text-[#ff6a00]' : ''
             }`}
             onClick={handleReload}
-            aria-label="Reload page"
             type="button"
           >
             <RefreshCw className="size-4" />
           </button>
           <button
+            aria-label="Home"
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors cursor-pointer"
             onClick={() => handleNavigate('https://www.google.com')}
-            aria-label="Home"
             type="button"
           >
             <Home className="size-4" />
@@ -276,10 +276,10 @@ export function BrowserWorkspace() {
 
             return (
               <button
+                aria-label={`Open ${item.name}`}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[#1b202a] transition-colors cursor-pointer ${item.color}`}
                 key={item.name}
                 onClick={() => handleNavigate(item.url)}
-                aria-label={`Open ${item.name}`}
                 type="button"
               >
                 <Icon className="size-3.5" />
@@ -292,18 +292,18 @@ export function BrowserWorkspace() {
         {/* Window & Popup Controls */}
         <div className="flex items-center gap-1 border-l border-[#262c37] pl-2">
           <button
+            aria-label="Pop out into a dedicated floating window"
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#ff6a00]/15 text-[#ff7f24] hover:bg-[#ff6a00]/25 border border-[#ff6a00]/40 transition-colors shadow-sm shadow-[#ff6a00]/15 cursor-pointer"
             onClick={handleOpenPopup}
-            aria-label="Pop out into a dedicated floating window"
             type="button"
           >
             <Maximize2 className="size-3.5" />
             <span>Dedicated Popup</span>
           </button>
           <button
+            aria-label="Open in System Browser"
             className="p-1.5 rounded-lg text-[#9aa5b8] hover:text-white hover:bg-[#1b202a] transition-colors cursor-pointer"
             onClick={handleOpenSystem}
-            aria-label="Open in System Browser"
             type="button"
           >
             <ExternalLink className="size-4" />
