@@ -40,6 +40,7 @@ import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
 import { PanelEmpty } from '../overlays/panel'
 
 import { ConfigField } from './config-field'
+import { MAX_SAMOS_CONFIG_IMPORT_BYTES, parseSamOSConfigImport } from './config-import-validation'
 import { configSubpageForField } from './config-subpages'
 import { DELEGATION_ROUTE_COMPANION_KEY, DelegationRouteRow } from './delegation-route-row'
 import { DelegationRoutingSlot } from './delegation/routing-section'
@@ -383,11 +384,20 @@ function ConfigSettingsInner({
       return
     }
 
+    // Validate untrusted backups before they can alter settings or reach the
+    // debounced backend autosave path. Keep unknown plugin extension keys intact.
+    if (file.size > MAX_SAMOS_CONFIG_IMPORT_BYTES) {
+      notifyError(new Error('Configuration file exceeds the 4 MiB import limit.'), c.invalidJson)
+      e.target.value = ''
+      return
+    }
+
     const reader = new FileReader()
+    reader.onerror = () => notifyError(new Error('Could not read configuration file.'), c.invalidJson)
 
     reader.onload = () => {
       try {
-        updateConfig(JSON.parse(String(reader.result)))
+        updateConfig(parseSamOSConfigImport(String(reader.result)))
         notify({ kind: 'success', title: c.imported, message: t.common.saving })
       } catch (err) {
         notifyError(err, c.invalidJson)

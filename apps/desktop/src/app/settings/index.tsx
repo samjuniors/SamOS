@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react'
-import { type ComponentType, useCallback, useEffect, useMemo, useRef } from 'react'
+import { type ComponentType, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 
 import { codiconIcon } from '@/components/ui/codicon'
@@ -29,6 +29,7 @@ import {
 } from '@/lib/icons'
 import { isEditableTarget } from '@/lib/keybinds/combo'
 import { typeToFocusChar } from '@/lib/keybinds/composer-focus-keys'
+import { persistBoolean, storedBoolean } from '@/lib/storage'
 import { cn } from '@/lib/utils'
 import { $commandPaletteOpen, openCommandPalettePage } from '@/store/command-palette'
 import { confirm } from '@/store/confirm'
@@ -50,6 +51,8 @@ import { BILLING_VIEWS, BillingSettings, type BillingSubView } from './billing'
 import { deriveBillingView, useBillingState, useSubscriptionState } from './billing/use-billing-state'
 import { ConfigSettings } from './config-settings'
 import { SECTIONS } from './constants'
+import { contextualSettingsNavigation } from './contextual-navigation'
+import { groupCredentialNavigation } from './credential-navigation'
 import { GatewaySettings } from './gateway-settings'
 import { KeybindSettings } from './keybind-settings'
 import { KEYS_VIEWS, KeysSettings, type KeysView } from './keys-settings'
@@ -65,6 +68,7 @@ import {
 import { SettingsBreadcrumbContext } from './primitives'
 import { PROVIDER_VIEWS, ProvidersSettings, type ProviderView } from './providers-settings'
 import { SessionsSettings } from './sessions-settings'
+import { SettingsOverview } from './settings-overview'
 import { SettingsSubpageHeader } from './subpage-navigation'
 import { resolveSettingsSubpage, settingsSubpageIcon, settingsSubpages } from './subpages'
 import type { SettingsPageProps, SettingsView as SettingsViewId } from './types'
@@ -72,6 +76,7 @@ import { vaultOwnerKey, VaultSettings } from './vault-settings'
 import { useWebAccessAvailable, WebAccessSettings } from './web-access-settings'
 
 const SETTINGS_VIEWS: readonly SettingsViewId[] = [
+  'overview',
   ...SECTIONS.map(s => `config:${s.id}` as SettingsViewId),
   'providers',
   'gateway',
@@ -120,7 +125,11 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     }
   }, [navigate, search])
 
-  const [activeView] = useRouteEnumParam('tab', SETTINGS_VIEWS, 'config:model' as SettingsViewId)
+  const [activeView] = useRouteEnumParam('tab', SETTINGS_VIEWS, 'overview' as SettingsViewId)
+
+  const [showAllCategories, setShowAllCategories] = useState(() =>
+    storedBoolean('samos.settings.showAllCategories', false)
+  )
 
   useEffect(() => recordFeatureUse(settingsArea(activeView)), [activeView])
   const params = new URLSearchParams(search)
@@ -253,10 +262,17 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     }
   }, [activeView, setActiveView, webAccessAvailable])
 
-  const navGroups: OverlayNavGroup[] = useMemo(
+  const routeNavGroups: OverlayNavGroup[] = useMemo(
     () =>
       (
         [
+          {
+            active: activeView === 'overview',
+            icon: Settings2,
+            id: 'overview',
+            label: 'Overview',
+            onSelect: () => setActiveView('overview')
+          },
           ...SECTIONS.flatMap(s => {
             const view = `config:${s.id}` as SettingsViewId
 
@@ -474,6 +490,17 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
     ]
   )
 
+  // Match Aro's calmer navigation while retaining SamOS-only plugin, web-access
+  // and delegated-agent settings. Active deep links always remain visible.
+  const credentialGroups = groupCredentialNavigation(routeNavGroups, {
+    accountsAndProviders: t.settings.nav.providers,
+    credentials: t.settings.nav.apiKeys
+  })
+  const navGroups = contextualSettingsNavigation(credentialGroups, showAllCategories, 'More settings', () => {
+    persistBoolean('samos.settings.showAllCategories', true)
+    setShowAllCategories(true)
+  })
+
   const activeGroup = navGroups.find(group => group.active)
   const activeChild = activeGroup?.children?.find(child => child.active)
 
@@ -531,6 +558,19 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
 
   const navFooter = (
     <>
+      {showAllCategories && (
+        <Tip label="Show fewer settings">
+          <OverlayIconButton
+            aria-label="Show fewer settings"
+            onClick={() => {
+              persistBoolean('samos.settings.showAllCategories', false)
+              setShowAllCategories(false)
+            }}
+          >
+            <Settings2 />
+          </OverlayIconButton>
+        </Tip>
+      )}
       <Tip label={t.settings.exportConfig}>
         <OverlayIconButton onClick={() => void exportConfig()}>
           <Download />
@@ -562,7 +602,17 @@ export function SettingsView({ onClose, onConfigSaved, onMainModelChanged }: Set
 
   const SubpageView = SUBPAGE_VIEWS[activeView]
 
-  const activeSettingsContent = SubpageView ? (
+  const activeSettingsContent = activeView === 'overview' ? (
+    <SettingsOverview
+      onOpen={(view, page) => {
+        if (view === 'providers' && page === 'local') {
+          openProviderView('local')
+          return
+        }
+        openSettingsPage(view, page)
+      }}
+    />
+  ) : SubpageView ? (
     <SubpageView subpage={subpage} />
   ) : activeView.startsWith('config:') ? (
     <ConfigSettings

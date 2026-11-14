@@ -281,15 +281,18 @@ function ConnectedProviderRow({
   const showHint = !canDisconnect && !terminalDisconnect
 
   return (
-    <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[6px] transition-colors hover:bg-(--ui-control-hover-background)">
+    <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[6px] border border-(--ui-stroke-secondary)/40 transition-[border-color,background-color] duration-150 motion-reduce:transition-none hover:border-(--ui-stroke-secondary) hover:bg-(--ui-control-hover-background)">
       <RowButton
         className="min-w-0 px-3 py-2.5 text-left"
         onClick={() => (terminalDisconnect ? onTerminalDisconnect(provider) : onSelect(provider))}
       >
         <div className="flex min-w-0 items-center gap-2">
           <span className="truncate text-[length:var(--conversation-text-font-size)] font-semibold">{title}</span>
-          <span className="inline-flex shrink-0 items-center gap-1 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-            <Check className="size-3" />
+          <span
+            className="inline-flex shrink-0 items-center gap-1 rounded-[6px] bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-primary/25"
+            role="status"
+          >
+            <Check aria-hidden="true" className="size-3 stroke-[2.5]" />
             {copy.connected}
           </span>
         </div>
@@ -370,7 +373,7 @@ function LocalEndpointRow({ onOpen }: { onOpen: (reason: null | string) => void 
 
   return (
     <RowButton
-      className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[6px] px-3 py-2.5 text-left transition-colors hover:bg-(--ui-control-hover-background)"
+      className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 rounded-[6px] border border-(--ui-stroke-secondary)/40 px-3 py-2.5 text-left transition-[border-color,background-color] duration-150 motion-reduce:transition-none hover:border-(--ui-stroke-secondary) hover:bg-(--ui-control-hover-background)"
       onClick={() => onOpen(null)}
     >
       <div className="flex min-w-0 flex-col gap-0.5">
@@ -379,7 +382,7 @@ function LocalEndpointRow({ onOpen }: { onOpen: (reason: null | string) => void 
           {copy.description}
         </span>
       </div>
-      <ChevronRight className="size-4 text-muted-foreground transition group-hover:text-foreground" />
+      <ChevronRight className="size-4 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none group-hover:text-foreground" />
     </RowButton>
   )
 }
@@ -395,6 +398,7 @@ export function ProvidersSettings({
   const scopeProfile = useStore($settingsRequestProfile)
   const { rowProps, vars } = useEnvCredentials(scopeProfile)
   const [oauthProviders, setOauthProviders] = useState<OAuthProvider[]>([])
+  const [oauthLoadError, setOauthLoadError] = useState(false)
   const [openProvider, setOpenProvider] = useState<null | string>(null)
   const [disconnecting, setDisconnecting] = useState<null | string>(null)
   // Free-text filter for the API-keys view (provider name / env-var key / desc).
@@ -416,7 +420,7 @@ export function ProvidersSettings({
     return byEnv
   }, [vars])
 
-  const apiKeysShown = view === 'keys' || (oauthProviders.length === 0 && view !== 'custom-endpoints')
+  const apiKeysShown = view === 'keys' || (view === 'accounts' && oauthProviders.length === 0)
 
   // Deep link from a rejected-key error card (?pview=keys&key=<ENV_KEY>):
   // clear the filter, expand that provider's card and scroll to it.
@@ -431,9 +435,14 @@ export function ProvidersSettings({
   })
 
   const refreshOAuthProviders = useCallback(async () => {
-    // OAuth providers are best-effort — a failure here just hides the panel.
-    const { providers } = await listOAuthProviders(scopeProfile)
-    setOauthProviders(providers)
+    try {
+      const { providers } = await listOAuthProviders(scopeProfile)
+      setOauthProviders(providers)
+      setOauthLoadError(false)
+    } catch {
+      // A disconnected gateway is not the same as having no configured providers.
+      setOauthLoadError(true)
+    }
   }, [scopeProfile])
 
   useEffect(() => {
@@ -449,9 +458,12 @@ export function ProvidersSettings({
 
         if (!cancelled) {
           setOauthProviders(providers)
+          setOauthLoadError(false)
         }
       } catch {
-        // Ignore — the OAuth panel just won't render.
+        if (!cancelled) {
+          setOauthLoadError(true)
+        }
       }
     })()
 
@@ -536,9 +548,16 @@ export function ProvidersSettings({
   const hasOauth = oauthProviders.length > 0
   // The sidebar subnav owns the Accounts/API-keys split now; with no OAuth
   // providers there's nothing for the "Accounts" view to show, so fall to keys.
-  const showApiKeys = view === 'keys' || (!hasOauth && view !== 'custom-endpoints')
+  const showApiKeys = view === 'keys' || (view === 'accounts' && !hasOauth)
 
   const keyGroups = buildProviderKeyGroups(vars)
+
+  const accountStatusWarning = oauthLoadError ? (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-[6px] border border-(--ui-stroke-secondary) p-3" role="alert">
+      <p className="text-sm text-(--ui-text-secondary)">Could not load provider account status. Check the gateway connection, then retry.</p>
+      <Button onClick={() => void refreshOAuthProviders()} size="sm" type="button" variant="outline">Retry</Button>
+    </div>
+  ) : null
 
   if (showApiKeys) {
     const q = normalize(keyQuery)
@@ -554,6 +573,8 @@ export function ProvidersSettings({
     return (
       <SettingsContent>
         <SettingsProfileScope className="mb-5" />
+        {accountStatusWarning}
+        <p className="mb-3 text-xs text-(--ui-text-tertiary)">A saved API key means configured, not connection-tested. Choose a model and send a request to verify access.</p>
         <LocalEndpointRow onOpen={reason => startManualLocalEndpoint(reason, scopeProfile)} />
         {keyGroups.length > 0 ? (
           <div className="grid gap-3">
@@ -605,6 +626,7 @@ export function ProvidersSettings({
   return (
     <SettingsContent>
       <SettingsProfileScope className="mb-5" />
+      {accountStatusWarning}
       <OAuthPicker
         disconnecting={disconnecting}
         onDisconnect={provider => void handleDisconnect(provider)}

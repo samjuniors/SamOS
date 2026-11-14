@@ -115,6 +115,24 @@ async function renderProvidersSettings() {
 }
 
 describe('ProvidersSettings', () => {
+  it('reports provider status discovery failures and recovers with retry', async () => {
+    listOAuthProviders.mockReset()
+    listOAuthProviders
+      .mockRejectedValueOnce(new Error('Gateway temporarily unavailable'))
+      .mockResolvedValue({ providers: [provider('nous', true)] })
+
+    await renderProvidersSettings()
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(screen.getByText(/Could not load provider account status/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+    await waitFor(() => expect(listOAuthProviders).toHaveBeenCalledTimes(2))
+  })
+
+
   it('reads and saves API keys for the shared Settings target and reloads when it changes', async () => {
     $activeGatewayProfile.set('profile-a')
     $settingsScopeOverride.set('profile-b')
@@ -445,6 +463,16 @@ describe('ProvidersSettings', () => {
     expect(await screen.findByText('Zebra blurb')).toBeTruthy()
     expect(screen.queryByText('Acme blurb')).toBeNull()
     await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled())
+  })
+
+  it('does not redirect local-model settings to API keys when OAuth providers are absent', async () => {
+    listOAuthProviders.mockResolvedValue({ providers: [] })
+    getEnvVars.mockResolvedValue({})
+
+    render(<ProvidersSettings onClose={vi.fn()} onViewChange={vi.fn()} view="local" />)
+
+    await waitFor(() => expect(getEnvVars).toHaveBeenCalled())
+    expect(screen.queryByText('Local / custom endpoint')).toBeNull()
   })
 
   it('offers a Local / custom endpoint entry in the API-keys tab that opens the custom-endpoint flow', async () => {
