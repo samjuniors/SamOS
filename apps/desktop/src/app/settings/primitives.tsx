@@ -50,6 +50,41 @@ export function Pill({
   )
 }
 
+/** Grouped Settings card adapted from Aro. Retains SamOS theme tokens and keyboard semantics. */
+export function SettingsGroup({
+  title,
+  description,
+  aside,
+  children,
+  className
+}: {
+  title?: ReactNode
+  description?: ReactNode
+  aside?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <section
+      className={cn(
+        'settings-group mb-5 overflow-hidden rounded-lg border border-(--ui-stroke-primary) bg-(--ui-bg-card) transition-[border-color,background-color] duration-150 motion-reduce:transition-none',
+        className
+      )}
+    >
+      {title && (
+        <div className="flex items-center justify-between border-b border-(--ui-stroke-secondary) px-4 py-3">
+          <div>
+            <h3 className="text-xs font-medium text-(--ui-text-primary)">{title}</h3>
+            {description && <p className="mt-0.5 text-xs leading-relaxed text-(--ui-text-tertiary)">{description}</p>}
+          </div>
+          {aside && <div className="ml-auto flex items-center">{aside}</div>}
+        </div>
+      )}
+      <div className="divide-y divide-(--ui-stroke-secondary) px-4">{children}</div>
+    </section>
+  )
+}
+
 export function SectionHeading({
   aside,
   icon: Icon,
