@@ -218,7 +218,7 @@ export function AiProviderSettingsModal({ isOpen, onClose }: Props) {
               alignItems: 'center',
               gap: '4px'
             }}
-            title="Discard in-app UI overrides and restore values strictly from .env"
+            aria-label="Discard in-app UI overrides and restore values strictly from .env"
             type="button"
           >
             <RotateCcw size={11} /> Reset to .env Defaults

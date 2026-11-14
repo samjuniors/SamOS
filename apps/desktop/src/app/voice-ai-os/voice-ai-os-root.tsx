@@ -143,7 +143,7 @@ export function VoiceAiOsRoot({
           <button
             className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1b202a] hover:bg-[#262c37] border border-[#ff6a00]/40 text-[11px] font-mono text-[#ff7f24] transition-all cursor-pointer shadow-sm shadow-[#ff6a00]/15"
             onClick={openSelfRepairModal}
-            title="Autonomous Self-Repair Sentinel - Click to inspect or run full system diagnostics"
+            aria-label="Autonomous Self-Repair Sentinel - Click to inspect or run full system diagnostics"
             type="button"
           >
             <Wrench className="size-3 text-[#ff6a00] animate-pulse" />
@@ -163,7 +163,7 @@ export function VoiceAiOsRoot({
           <button
             className="hidden md:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#1b202a] hover:bg-[#262c37] border border-[#262c37] text-[11px] font-mono text-[#9aa5b8] hover:text-white transition-colors cursor-pointer"
             onClick={() => setSettingsOpen(true)}
-            title="Configure AI Engine & API Keys (Cloud / Offline)"
+            aria-label="Configure AI Engine & API Keys (Cloud / Offline)"
             type="button"
           >
             {aiConfig.mode === 'offline' ? (
@@ -216,7 +216,6 @@ export function VoiceAiOsRoot({
                   : 'text-slate-400 hover:text-white'
               }`}
               onClick={() => setWindowMode('hud')}
-              title="Switch to compact floating HUD mode"
               type="button"
             >
               <Minimize2 className="size-3" />
@@ -230,7 +229,6 @@ export function VoiceAiOsRoot({
                   : 'text-slate-400 hover:text-white'
               }`}
               onClick={() => setWindowMode('canvas')}
-              title="Switch to full desktop productivity canvas"
               type="button"
             >
               <Layout className="size-3" />
@@ -244,7 +242,6 @@ export function VoiceAiOsRoot({
                   : 'text-slate-400 hover:text-white'
               }`}
               onClick={() => setWindowMode('cua_overlay')}
-              title="Switch to CUA Set-of-Marks Overlay mode"
               type="button"
             >
               <Monitor className="size-3" />
@@ -257,7 +254,6 @@ export function VoiceAiOsRoot({
             aria-label="Settings"
             className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition-colors cursor-pointer"
             onClick={() => setSettingsOpen(true)}
-            title="AI Provider Settings (Cloud API Key / Offline Ollama)"
             type="button"
           >
             <Settings className="size-3.5" />
@@ -496,7 +492,6 @@ export function VoiceAiOsRoot({
                 toggleHandsfreeRecordingTurn()
               }
             }}
-            title="Toggle Mic / Speak Hands-free"
             type="button"
           >
             <Mic className="size-4" />
@@ -525,7 +520,6 @@ export function VoiceAiOsRoot({
                 void handleSpokenCommand(cmd)
               }
             }}
-            title="Execute command"
             type="button"
           >
             <Send className="size-3.5" />
@@ -536,7 +530,7 @@ export function VoiceAiOsRoot({
           <button
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1b202a] hover:bg-[#262c37] border border-[#262c37] hover:border-[#ff6a00]/40 text-[#ff7f24] transition-colors cursor-pointer"
             onClick={openSelfRepairModal}
-            title="Autonomous Self-Repair Sentinel"
+            aria-label="Autonomous Self-Repair Sentinel"
             type="button"
           >
             <Wrench className="size-3 text-[#ff6a00]" />

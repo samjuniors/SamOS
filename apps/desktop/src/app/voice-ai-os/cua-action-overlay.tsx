@@ -230,7 +230,6 @@ export function CuaActionOverlay({
           aria-label="Emergency Stop Computer Automation"
           className="cua-killswitch-pill flex items-center gap-2 px-4 py-2 rounded-full text-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-400"
           onClick={() => void abortCua()}
-          title="Emergency Abort (Press ESC)"
           type="button"
         >
           <AlertOctagon className="size-4 animate-pulse fill-white/20" />
@@ -249,7 +248,6 @@ export function CuaActionOverlay({
           aria-label={showSomTags ? 'Hide Set-of-Marks tags' : 'Show Set-of-Marks tags'}
           className="voice-os-glass p-2 rounded-full text-[#9aa5b8] hover:text-white border border-[#262c37] hover:bg-[#1b202a] transition-colors cursor-pointer"
           onClick={() => setShowSomTags(prev => !prev)}
-          title={showSomTags ? 'Hide Set-of-Marks tags' : 'Show Set-of-Marks tags'}
           type="button"
         >
           {showSomTags ? <Eye className="size-3.5 text-[#ff6a00]" /> : <EyeOff className="size-3.5" />}
@@ -261,7 +259,7 @@ export function CuaActionOverlay({
         <button
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/15 hover:bg-[#ff6a00]/25 text-[#ff7f24] border border-[#ff6a00]/40 text-xs font-semibold backdrop-blur-md shadow-lg shadow-[#ff6a00]/15 transition-all cursor-pointer"
           onClick={handleLaunchNotepad}
-          title="Open Notepad on your PC and type simulated greeting"
+          aria-label="Open Notepad on your PC and type simulated greeting"
           type="button"
         >
           <FileText className="size-3.5 text-[#ff6a00]" />
@@ -271,7 +269,7 @@ export function CuaActionOverlay({
         <button
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14171f] hover:bg-[#1b202a] text-slate-200 border border-[#262c37] text-xs font-semibold backdrop-blur-md shadow-lg transition-all cursor-pointer"
           onClick={handleLaunchCalc}
-          title="Open Calculator on your PC"
+          aria-label="Open Calculator on your PC"
           type="button"
         >
           <Calculator className="size-3.5 text-[#ff7f24]" />
@@ -281,7 +279,7 @@ export function CuaActionOverlay({
         <button
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14171f] hover:bg-[#1b202a] text-slate-200 border border-[#262c37] text-xs font-semibold backdrop-blur-md shadow-lg transition-all cursor-pointer"
           onClick={handleLaunchExplorer}
-          title="Open Windows File Explorer"
+          aria-label="Open Windows File Explorer"
           type="button"
         >
           <Folder className="size-3.5 text-[#9aa5b8]" />
@@ -291,7 +289,7 @@ export function CuaActionOverlay({
         <button
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/15 hover:bg-[#ff6a00]/25 text-[#ff7f24] border border-[#ff6a00]/40 text-xs font-semibold backdrop-blur-md shadow-lg shadow-[#ff6a00]/15 transition-all cursor-pointer"
           onClick={handleSimulateDragClick}
-          title="Simulate Click & Drag with visual ripple"
+          aria-label="Simulate Click & Drag with visual ripple"
           type="button"
         >
           <MousePointer className="size-3.5 text-[#ff6a00]" />
@@ -301,7 +299,7 @@ export function CuaActionOverlay({
         <button
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#14171f] hover:bg-[#1b202a] text-slate-200 border border-[#262c37] text-xs font-semibold backdrop-blur-md shadow-lg transition-all cursor-pointer"
           onClick={() => handleOpenYouTube(false)}
-          title="Open YouTube in Workspace Browser"
+          aria-label="Open YouTube in Workspace Browser"
           type="button"
         >
           <Tv className="size-3.5 text-[#ff6a00]" />
@@ -311,7 +309,7 @@ export function CuaActionOverlay({
         <button
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#ff6a00]/20 hover:bg-[#ff6a00]/30 text-[#ff944d] border border-[#ff6a00]/50 text-xs font-semibold backdrop-blur-md shadow-lg shadow-[#ff6a00]/20 transition-all cursor-pointer"
           onClick={() => handleOpenYouTube(true)}
-          title="Open YouTube in Dedicated Popup Window"
+          aria-label="Open YouTube in Dedicated Popup Window"
           type="button"
         >
           <ExternalLink className="size-3.5 text-[#ff7f24]" />
